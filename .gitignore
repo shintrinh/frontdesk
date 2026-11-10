@@ -1,0 +1,6 @@
+# FrontDesk .gitignore — never ignore /.kiro (Kiroween rules: the .kiro
+# folder must stay in the repo at the root).
+node_modules/
+data/
+*.log
+.DS_Store

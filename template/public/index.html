@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FrontDesk — Owner Dashboard</title>
+<link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+<header>
+  <h1 id="business-name">FrontDesk</h1>
+  <p id="business-meta"></p>
+</header>
+<main>
+  <section class="card" id="estimate-card" hidden>
+    <h2>Repair estimate</h2>
+    <p>Describe the symptom — the estimate comes from the named dataset, never invented.</p>
+    <input id="symptom" type="text" placeholder="e.g. grinding noise when braking">
+    <button id="estimate-btn">Get estimate</button>
+    <pre id="estimate-out"></pre>
+  </section>
+
+  <section class="card">
+    <h2>Book an appointment</h2>
+    <form id="booking-form">
+      <label>Service <select id="service" required></select></label>
+      <label>Date <input id="date" type="date" required></label>
+      <label>Time <select id="slot" required><option value="">Pick a date + service first</option></select></label>
+      <label>Name <input id="customer-name" type="text" required></label>
+      <label>Phone <input id="phone" type="tel" required></label>
+      <div id="intake-fields"></div>
+      <label>Channel
+        <select id="channel"><option value="voice">Voice</option><option value="sms">SMS</option></select>
+      </label>
+      <button type="submit">Book appointment</button>
+    </form>
+    <pre id="booking-out"></pre>
+  </section>
+
+  <section class="card">
+    <h2>Today's appointments</h2>
+    <table id="bookings-table">
+      <thead><tr><th>Time</th><th>Customer</th><th>Service</th><th>Phone</th><th>Status</th><th></th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </section>
+
+  <section class="card">
+    <h2>Reminders due</h2>
+    <div id="reminders"></div>
+  </section>
+
+  <section class="card">
+    <h2>Sent messages (simulated)</h2>
+    <p class="muted">The template simulates SMS/voice sends and records them here. A real deployment wires Twilio at this point.</p>
+    <ul id="outbox"></ul>
+  </section>
+</main>
+<footer>
+  <p class="muted">FrontDesk template — generated from one JSON config. No login required.</p>
+</footer>
+<script src="/dashboard.js"></script>
+</body>
+</html>

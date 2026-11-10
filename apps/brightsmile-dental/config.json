@@ -1,0 +1,107 @@
+{
+  "business": {
+    "address": "88 Rosewood Blvd, Austin, TX 78704",
+    "hours": {
+      "close": "17:00",
+      "days": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "open": "09:00"
+    },
+    "name": "BrightSmile Dental",
+    "phone": "(555) 010-0187",
+    "timezone": "America/New_York",
+    "type": "dental-clinic"
+  },
+  "channels": [
+    "voice",
+    "sms"
+  ],
+  "estimate": {
+    "enabled": false
+  },
+  "intakeFields": [
+    "fullName",
+    "dateOfBirth",
+    "insuranceProvider",
+    "healthHistory",
+    "isNewPatient",
+    "lastVisitDate"
+  ],
+  "intakeOptional": [
+    "lastVisitDate"
+  ],
+  "language": "en",
+  "reminders": {
+    "confirmHoursBefore": 24,
+    "recallDays": 180
+  },
+  "services": [
+    {
+      "codes": [
+        "D1110",
+        "D0120"
+      ],
+      "description": "Adult prophylaxis (D1110) and periodic oral evaluation (D0120).",
+      "durationMin": 60,
+      "id": "cleaning",
+      "name": "Cleaning & Checkup",
+      "priceEstimate": null
+    },
+    {
+      "codes": [
+        "D0150"
+      ],
+      "description": "Comprehensive oral evaluation (D0150) for new patients.",
+      "durationMin": 90,
+      "id": "new-patient-exam",
+      "name": "New Patient Exam",
+      "priceEstimate": null
+    },
+    {
+      "codes": [
+        "D0274"
+      ],
+      "description": "Four bitewing radiographic images (D0274).",
+      "durationMin": 30,
+      "id": "bitewing-xrays",
+      "name": "Bitewing X-Rays",
+      "priceEstimate": null
+    },
+    {
+      "codes": [
+        "D2391"
+      ],
+      "description": "Resin-based composite, one surface, posterior (D2391).",
+      "durationMin": 60,
+      "id": "filling",
+      "name": "Composite Filling",
+      "priceEstimate": null
+    },
+    {
+      "codes": [
+        "D4341"
+      ],
+      "description": "Periodontal scaling and root planing, per quadrant (D4341).",
+      "durationMin": 90,
+      "id": "deep-cleaning",
+      "name": "Scaling & Root Planing",
+      "priceEstimate": null
+    },
+    {
+      "codes": [
+        "D2740"
+      ],
+      "description": "Crown, porcelain/ceramic substrate (D2740).",
+      "durationMin": 90,
+      "id": "crown",
+      "name": "Porcelain Crown",
+      "priceEstimate": null
+    }
+  ]
+}

@@ -1,0 +1,1 @@
+{"hooks":[{"action":{"command":"node --test \"template/tests/*.test.js\"","type":"command"},"description":"Run the template test suites after every spec task so a regression is caught in the same session.","name":"test-after-spec-task","timeout":120,"trigger":"PostTaskExec"}],"version":"v1"}

@@ -1,0 +1,103 @@
+{
+  "business": {
+    "address": "214 Meridian Ave, San Jose, CA 95126",
+    "hours": {
+      "close": "17:00",
+      "days": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "open": "09:00"
+    },
+    "name": "FixIt Auto",
+    "phone": "(555) 010-0142",
+    "timezone": "America/New_York",
+    "type": "auto-repair"
+  },
+  "channels": [
+    "voice",
+    "sms"
+  ],
+  "estimate": {
+    "dataset": "datasets/auto-repair-estimates.sample.json",
+    "enabled": true,
+    "rule": "service + symptom -> price range + time range"
+  },
+  "intakeFields": [
+    "vehicleYearMakeModel",
+    "mileage",
+    "symptomDescription"
+  ],
+  "intakeOptional": [],
+  "language": "en",
+  "reminders": {
+    "confirmHoursBefore": 24,
+    "recallDays": null
+  },
+  "services": [
+    {
+      "description": "Full-synthetic oil and filter change.",
+      "durationMin": 45,
+      "id": "oil-change",
+      "name": "Oil Change",
+      "priceEstimate": {
+        "max": 188,
+        "min": 160
+      }
+    },
+    {
+      "description": "Free visual brake inspection; quote after inspection.",
+      "durationMin": 60,
+      "id": "brake-inspection",
+      "name": "Brake Inspection",
+      "priceEstimate": {
+        "max": 0,
+        "min": 0
+      }
+    },
+    {
+      "description": "Brake pads, one axle, parts and labor.",
+      "durationMin": 60,
+      "id": "brake-pads",
+      "name": "Brake Pad Replacement",
+      "priceEstimate": {
+        "max": 394,
+        "min": 335
+      }
+    },
+    {
+      "description": "Pads and rotors, one axle, parts and labor.",
+      "durationMin": 90,
+      "id": "brake-pads-rotors",
+      "name": "Brake Pads + Rotors",
+      "priceEstimate": {
+        "max": 1400,
+        "min": 500
+      }
+    },
+    {
+      "description": "Starter motor replacement, parts and labor.",
+      "durationMin": 120,
+      "id": "starter-replacement",
+      "name": "Starter Replacement",
+      "priceEstimate": {
+        "max": 796,
+        "min": 565
+      }
+    },
+    {
+      "description": "Alternator replacement, parts and labor.",
+      "durationMin": 120,
+      "id": "alternator-replacement",
+      "name": "Alternator Replacement",
+      "priceEstimate": {
+        "max": 1088,
+        "min": 809
+      }
+    }
+  ]
+}
