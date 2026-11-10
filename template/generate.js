@@ -8,6 +8,14 @@
  * per-vertical dashboard (public/) + a vertical smoke test. The generated app
  * reuses the template core (no code is duplicated into the app).
  *
+ * The output directory can be anywhere: --out apps/fixit-auto (the canonical
+ * in-repo location) or an out-of-tree directory such as /tmp/paws-vet. All
+ * paths the generated files use to reach the template core are computed
+ * relative to the output directory (path.relative), so a generated app boots
+ * wherever it is created. Hardcoded ../../template paths would only work
+ * inside apps/ — that was a real bug, caught by the Day 3 video prep when
+ * the vet app was generated to /tmp (MODULE_NOT_FOUND).
+ *
  * Per-vertical dashboards live in template/public-<type>/ (auto-repair and
  * dental-clinic); any other business type falls back to the generic
  * template/public/ dashboard.
@@ -15,6 +23,14 @@
 const fs = require('fs');
 const path = require('path');
 const { loadConfig, slug } = require('./lib/config');
+
+// Turn a path.relative() result into a require()-safe relative path:
+// forward slashes, and a './' prefix when it does not start with '.'.
+function toRequirePath(relative) {
+  const fwd = relative.split(path.sep).join('/');
+  if (fwd === '') return '.';
+  return fwd.startsWith('.') ? fwd : `./${fwd}`;
+}
 
 function parseArgs(argv) {
   const opts = {};
@@ -25,7 +41,7 @@ function parseArgs(argv) {
   return opts;
 }
 
-function appReadme(config) {
+function appReadme(config, relToTemplate, relToDocs) {
   const estimateLine = config.estimate.enabled
     ? `- Repair estimates: enabled (dataset: ${config.estimate.dataset || 'none configured'})`
     : '- Repair estimates: disabled for this vertical';
@@ -56,17 +72,17 @@ No dependencies, no build step, no login. Data is stored in \`./data/\`
 
 ## Where it comes from
 
-- Template core: \`../../template/\`
+- Template core: \`${relToTemplate}/\`
 - Config source: the JSON file passed to \`template/generate.js\`
-- Generator: \`../../template/generate.js\` (Day 2: full generation — per-vertical
+- Generator: \`${relToTemplate}/generate.js\` (Day 2: full generation — per-vertical
   dashboard in \`public/\`, vertical smoke tests)
 - Dashboard: estimate-first for auto repair, recall-first for dental — served
   from this app's own \`public/\` folder
-- Deploy: see \`../../docs/DEPLOY.md\` (Render Blueprint in the repo root)
+- Deploy: see \`${relToDocs}\` (Render Blueprint in the repo root)
 `;
 }
 
-function appServerJs() {
+function appServerJs(relToTemplate) {
   return `'use strict';
 /**
  * Generated app entry point. Thin wrapper: the whole front desk runs from
@@ -74,7 +90,7 @@ function appServerJs() {
  * app's per-vertical dashboard from public/.
  */
 const path = require('path');
-const { start, loadConfig } = require('../../template/server');
+const { start, loadConfig } = require('${relToTemplate}/server');
 
 const config = loadConfig(path.join(__dirname, 'config.json'));
 const args = process.argv.slice(2);
@@ -118,7 +134,7 @@ function appPackageJson(config) {
   };
 }
 
-function appSmokeTest(config) {
+function appSmokeTest(config, relToTemplateFromTests) {
   const isAuto = config.business.type === 'auto-repair';
   const isDental = config.business.type === 'dental-clinic';
   const marker = isAuto ? 'Repair estimate' : isDental ? 'Patients due for recall' : 'Book an appointment';
@@ -198,8 +214,8 @@ const assert = require('node:assert/strict');
 const os = require('os');
 const path = require('path');
 const fs = require('fs');
-const { loadConfig } = require('../../../template/lib/config');
-const { createServer } = require('../../../template/server');
+const { loadConfig } = require('${relToTemplateFromTests}/lib/config');
+const { createServer } = require('${relToTemplateFromTests}/server');
 
 function nextWeekday() {
   // Next date that is a business day (Mon-Sat) at least 2 days out.
@@ -247,12 +263,24 @@ ${verticalChecks}
 function generate(configPath, outDir) {
   const config = loadConfig(configPath);
   const absoluteOut = path.resolve(outDir);
+  // Paths from the generated files back to the template core, computed
+  // relative to the output directory so --out works anywhere (in-repo
+  // apps/<business>/ and out-of-tree /tmp/<business>/ alike). For the
+  // canonical apps/ location these come out identical to the old hardcoded
+  // paths (../../template, ../../../template, ../../docs/DEPLOY.md).
+  const relToTemplate = toRequirePath(path.relative(absoluteOut, __dirname));
+  const relToTemplateFromTests = toRequirePath(
+    path.relative(path.join(absoluteOut, 'tests'), __dirname),
+  );
+  const relToDocs = toRequirePath(
+    path.relative(absoluteOut, path.join(__dirname, '..', 'docs', 'DEPLOY.md')),
+  );
   fs.mkdirSync(path.join(absoluteOut, 'tests'), { recursive: true });
   fs.writeFileSync(path.join(absoluteOut, 'config.json'), JSON.stringify(config, (k, v) => (k === '_path' ? undefined : v), 2) + '\n');
-  fs.writeFileSync(path.join(absoluteOut, 'server.js'), appServerJs());
+  fs.writeFileSync(path.join(absoluteOut, 'server.js'), appServerJs(relToTemplate));
   fs.writeFileSync(path.join(absoluteOut, 'package.json'), JSON.stringify(appPackageJson(config), null, 2) + '\n');
-  fs.writeFileSync(path.join(absoluteOut, 'README.md'), appReadme(config));
-  fs.writeFileSync(path.join(absoluteOut, 'tests', 'smoke.test.js'), appSmokeTest(config));
+  fs.writeFileSync(path.join(absoluteOut, 'README.md'), appReadme(config, relToTemplate, relToDocs));
+  fs.writeFileSync(path.join(absoluteOut, 'tests', 'smoke.test.js'), appSmokeTest(config, relToTemplateFromTests));
   const dashboard = copyDashboard(config, absoluteOut);
   return { config, outDir: absoluteOut, dashboard };
 }

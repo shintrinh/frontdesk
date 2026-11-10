@@ -62,5 +62,6 @@
 - [ ] Pilot: 3 real people book through voice/SMS on the two apps; record time + success rate
   - _Requirements: 5.1_
 - [ ] Video < 3 min: cold-open 3s, one villain, one real flow per app, live third-vertical (vet clinic) generation as the one-more-thing, end card + 1 CTA
+  - _Video prep done early 2026-11-10: script v1 + 7 raw clips recorded (see `files/video/` in the goal workspace). Prep caught a video-blocking generator bug — generated apps hardcoded `require('../../template/server')`, so an app generated outside `apps/` crashed on boot (MODULE_NOT_FOUND). Fixed 2026-11-10 in `template/generate.js` (paths now computed relative to `--out` with `path.relative`); canonical `apps/` output is byte-identical to the committed apps; regression test boots a generated vet app from a temp dir. Full suite 32/32 in 3 timezones._
 - [ ] Submit 2026-11-12 (Devpost): founder + LinkedIn + fenbig.com (Best Startup), 2 app folders, `/.kiro` at root, MIT license, public YouTube video
   - _Requirements: 8.3_
