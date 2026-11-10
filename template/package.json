@@ -8,6 +8,7 @@
   "name": "frontdesk-template",
   "private": true,
   "scripts": {
+    "cli": "node cli.js",
     "generate": "node generate.js",
     "start": "node server.js --config ../config/fixit-auto.json --port 3000",
     "start:auto": "node server.js --config ../config/fixit-auto.json --port 3001",

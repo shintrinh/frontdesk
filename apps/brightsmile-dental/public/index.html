@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FrontDesk — Dental Dashboard</title>
+<link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+<header>
+  <h1 id="business-name">FrontDesk</h1>
+  <p id="business-meta"></p>
+</header>
+<main>
+  <section class="card" id="recall-card">
+    <h2>Patients due for recall</h2>
+    <p>Recalls are computed from real past visits — a patient is due when it has been 180 days since their last completed visit and they have no future booking.</p>
+    <div id="recalls"></div>
+  </section>
+
+  <section class="card">
+    <h2>Book an appointment</h2>
+    <p class="muted">New patients: insurance provider and health history are required — the front desk collects them at booking time.</p>
+    <form id="booking-form">
+      <label>Service <select id="service" required></select></label>
+      <label>Date <input id="date" type="date" required></label>
+      <label>Time <select id="slot" required><option value="">Pick a date + service first</option></select></label>
+      <label>Name <input id="customer-name" type="text" required></label>
+      <label>Phone <input id="phone" type="tel" required></label>
+      <div id="intake-fields"></div>
+      <label>Channel
+        <select id="channel"><option value="voice">Voice</option><option value="sms">SMS</option></select>
+      </label>
+      <button type="submit">Book appointment</button>
+    </form>
+    <pre id="booking-out"></pre>
+  </section>
+
+  <section class="card">
+    <h2>Today's appointments</h2>
+    <table id="bookings-table">
+      <thead><tr><th>Time</th><th>Customer</th><th>Service</th><th>Phone</th><th>Status</th><th></th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </section>
+
+  <section class="card">
+    <h2>Reminders due</h2>
+    <p class="muted">Appointment confirmations (24h before). Recalls live in their own panel above.</p>
+    <div id="reminders"></div>
+  </section>
+
+  <section class="card">
+    <h2>Sent messages (simulated)</h2>
+    <p class="muted">The template simulates SMS/voice sends and records them here. A real deployment wires Twilio at this point.</p>
+    <ul id="outbox"></ul>
+  </section>
+</main>
+<footer>
+  <p class="muted">FrontDesk template — generated from one JSON config. No login required.</p>
+</footer>
+<script src="/dashboard.js"></script>
+</body>
+</html>

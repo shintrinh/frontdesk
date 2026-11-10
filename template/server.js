@@ -13,7 +13,7 @@ const http = require('http');
 const path = require('path');
 const { loadConfig, slug } = require('./lib/config');
 const { Store } = require('./lib/store');
-const { listSlots, slotIsFree, validateIntake } = require('./lib/booking');
+const { listSlots, slotIsFree, validateIntake, isOpenDay } = require('./lib/booking');
 const { loadDataset, estimate } = require('./lib/estimate');
 const { confirmationsDue, recallsDue, confirmationMessage, recallMessage } = require('./lib/reminders');
 
@@ -48,10 +48,21 @@ function readBody(req) {
 
 function createServer(config, opts = {}) {
   const dataDir = opts.dataDir || path.join(process.cwd(), 'data');
+  // Generated apps serve their own per-vertical dashboard from their own
+  // public/ folder; the template dashboard is the fallback.
+  const publicDir = opts.publicDir || PUBLIC_DIR;
   const store = new Store(dataDir, slug(config.business.name));
   let dataset = null;
   if (config.estimate && config.estimate.enabled && config.estimate.dataset) {
-    try { dataset = loadDataset(config.estimate.dataset); } catch (err) { dataset = null; }
+    // The dataset path is relative to the repo root. Resolve it from the
+    // working directory first, then from the template's parent (repo root),
+    // so a generated app works no matter where it is launched from.
+    const candidates = [
+      path.resolve(config.estimate.dataset),
+      path.join(__dirname, '..', config.estimate.dataset),
+    ];
+    const found = candidates.find((p) => fs.existsSync(p));
+    try { dataset = found ? loadDataset(found) : null; } catch (err) { dataset = null; }
   }
 
   const server = http.createServer(async (req, res) => {
@@ -60,9 +71,9 @@ function createServer(config, opts = {}) {
       const parts = url.pathname.split('/').filter(Boolean);
 
       // --- Dashboard (static) ---
-      if (req.method === 'GET' && url.pathname === '/') return sendFile(res, path.join(PUBLIC_DIR, 'index.html'));
+      if (req.method === 'GET' && url.pathname === '/') return sendFile(res, path.join(publicDir, 'index.html'));
       if (req.method === 'GET' && (url.pathname === '/styles.css' || url.pathname === '/dashboard.js')) {
-        return sendFile(res, path.join(PUBLIC_DIR, url.pathname.slice(1)));
+        return sendFile(res, path.join(publicDir, url.pathname.slice(1)));
       }
 
       // --- API ---
@@ -92,6 +103,9 @@ function createServer(config, opts = {}) {
         }
         if (!config.services.some((s) => s.id === serviceId)) {
           return sendJson(res, 400, { error: 'UNKNOWN_SERVICE', message: `unknown service: ${serviceId}` });
+        }
+        if (!isOpenDay(config, date)) {
+          return sendJson(res, 400, { error: 'CLOSED', message: `The shop is closed on ${date}` });
         }
         const intakeError = validateIntake(config, intake || {});
         if (intakeError) return sendJson(res, 400, { error: 'INTAKE_INCOMPLETE', message: intakeError });

@@ -9,6 +9,17 @@ function toMinutes(hhmm) {
   return h * 60 + m;
 }
 
+// Weekday of a YYYY-MM-DD date, computed in UTC so the result never depends
+// on the server's local timezone. 0 = Sunday, 6 = Saturday (getDay convention).
+function weekdayOf(dateStr) {
+  const [y, mo, d] = dateStr.split('-').map(Number);
+  return new Date(Date.UTC(y, mo - 1, d)).getUTCDay();
+}
+
+function isOpenDay(config, date) {
+  return config.business.hours.days.includes(weekdayOf(date));
+}
+
 function toHHMM(minutes) {
   const h = String(Math.floor(minutes / 60)).padStart(2, '0');
   const m = String(minutes % 60).padStart(2, '0');
@@ -22,8 +33,7 @@ function overlaps(aStart, aEnd, bStart, bEnd) {
 function listSlots(config, date, serviceId, bookings) {
   const service = config.services.find((s) => s.id === serviceId);
   if (!service) return { error: `unknown service: ${serviceId}` };
-  const day = new Date(`${date}T12:00:00`).getDay();
-  if (!config.business.hours.days.includes(day)) return { slots: [], closed: true };
+  if (!isOpenDay(config, date)) return { slots: [], closed: true };
 
   const open = toMinutes(config.business.hours.open);
   const close = toMinutes(config.business.hours.close);
@@ -47,6 +57,8 @@ function listSlots(config, date, serviceId, bookings) {
 function slotIsFree(config, date, serviceId, startTime, bookings) {
   const service = config.services.find((s) => s.id === serviceId);
   if (!service) return false;
+  // A closed day has no free slot, whatever the clock says.
+  if (!isOpenDay(config, date)) return false;
   const start = toMinutes(startTime);
   const end = start + service.durationMin;
   if (start < toMinutes(config.business.hours.open) || end > toMinutes(config.business.hours.close)) return false;
@@ -71,4 +83,4 @@ function validateIntake(config, intake) {
   return null;
 }
 
-module.exports = { listSlots, slotIsFree, validateIntake, toMinutes, toHHMM };
+module.exports = { listSlots, slotIsFree, validateIntake, toMinutes, toHHMM, weekdayOf, isOpenDay };

@@ -7,7 +7,7 @@ const os = require('os');
 const path = require('path');
 const fs = require('fs');
 const { loadConfig, validate } = require('../lib/config');
-const { listSlots, slotIsFree, validateIntake } = require('../lib/booking');
+const { listSlots, slotIsFree, validateIntake, isOpenDay } = require('../lib/booking');
 const { loadDataset, estimate } = require('../lib/estimate');
 const { confirmationsDue, recallsDue } = require('../lib/reminders');
 const { createServer } = require('../server');
@@ -27,6 +27,37 @@ function nextWeekday() {
   while (d.getDay() === 0) d.setDate(d.getDate() + 1);
   return d.toISOString().slice(0, 10);
 }
+
+function nextSunday() {
+  // Next Sunday, computed in UTC so the date never depends on server TZ.
+  const d = new Date();
+  const add = ((7 - d.getUTCDay()) % 7) || 7;
+  d.setUTCDate(d.getUTCDate() + add);
+  return d.toISOString().slice(0, 10);
+}
+
+test('booking on a closed day is rejected (PBT caught this on Day 2)', async () => {
+  const config = loadConfig(AUTO_CONFIG);
+  const sunday = nextSunday();
+  assert.equal(isOpenDay(config, sunday), false);
+  assert.equal(slotIsFree(config, sunday, 'oil-change', '10:00', []), false);
+  assert.deepEqual(listSlots(config, sunday, 'oil-change', []).closed, true);
+  const { server } = createServer(config, { dataDir: tmpDataDir() });
+  await new Promise((resolve) => server.listen(0, resolve));
+  const port = server.address().port;
+  try {
+    const res = await fetch(`http://localhost:${port}/api/bookings`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({
+      serviceId: 'oil-change', date: sunday, startTime: '10:00',
+      customerName: 'Sunday Test', phone: '+15550100',
+      intake: { vehicleYearMakeModel: '2020 Toyota Camry', mileage: 50000, symptomDescription: 'test' },
+      channel: 'sms',
+    }) });
+    assert.equal(res.status, 400);
+    assert.equal((await res.json()).error, 'CLOSED');
+  } finally {
+    await new Promise((resolve) => server.close(resolve));
+  }
+});
 
 test('both configs validate against the schema', () => {
   assert.equal(validate(loadConfig(AUTO_CONFIG)), true);

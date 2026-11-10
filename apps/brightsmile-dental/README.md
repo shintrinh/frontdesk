@@ -24,5 +24,8 @@ No dependencies, no build step, no login. Data is stored in `./data/`
 
 - Template core: `../../template/`
 - Config source: the JSON file passed to `template/generate.js`
-- Generator: `../../template/generate.js` (Day 1 skeleton; Day 2 adds
-  per-vertical screens, deploy wiring, and the full test suite)
+- Generator: `../../template/generate.js` (Day 2: full generation — per-vertical
+  dashboard in `public/`, vertical smoke tests)
+- Dashboard: estimate-first for auto repair, recall-first for dental — served
+  from this app's own `public/` folder
+- Deploy: see `../../docs/DEPLOY.md` (Render Blueprint in the repo root)

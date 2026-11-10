@@ -17,6 +17,9 @@ function estimate(config, dataset, symptom, serviceId) {
   if (!config.estimate || config.estimate.enabled !== true) {
     return { error: 'ESTIMATES_DISABLED', message: 'This business does not offer estimates.' };
   }
+  if (!dataset || !Array.isArray(dataset.entries)) {
+    return { error: 'DATASET_UNAVAILABLE', message: 'The estimate dataset is not loaded for this app.' };
+  }
   if (!symptom || !String(symptom).trim()) {
     return { error: 'SYMPTOM_REQUIRED', message: 'Describe the symptom to get an estimate.' };
   }

@@ -1,13 +1,16 @@
 'use strict';
 /**
- * FrontDesk vertical-generator (Day 1 skeleton).
+ * FrontDesk vertical-generator (Day 2: full generation).
  *   node template/generate.js --config config/fixit-auto.json --out apps/fixit-auto
  *
  * Reads one business config, validates it against the schema, and scaffolds a
  * runnable app: config copy + thin server wrapper + package.json + README +
- * a generated smoke test. The generated app reuses the template core (no code
- * is duplicated into the app); Day 2 adds per-vertical screens, deploy
- * wiring, and the full test suite.
+ * per-vertical dashboard (public/) + a vertical smoke test. The generated app
+ * reuses the template core (no code is duplicated into the app).
+ *
+ * Per-vertical dashboards live in template/public-<type>/ (auto-repair and
+ * dental-clinic); any other business type falls back to the generic
+ * template/public/ dashboard.
  */
 const fs = require('fs');
 const path = require('path');
@@ -55,8 +58,11 @@ No dependencies, no build step, no login. Data is stored in \`./data/\`
 
 - Template core: \`../../template/\`
 - Config source: the JSON file passed to \`template/generate.js\`
-- Generator: \`../../template/generate.js\` (Day 1 skeleton; Day 2 adds
-  per-vertical screens, deploy wiring, and the full test suite)
+- Generator: \`../../template/generate.js\` (Day 2: full generation — per-vertical
+  dashboard in \`public/\`, vertical smoke tests)
+- Dashboard: estimate-first for auto repair, recall-first for dental — served
+  from this app's own \`public/\` folder
+- Deploy: see \`../../docs/DEPLOY.md\` (Render Blueprint in the repo root)
 `;
 }
 
@@ -64,7 +70,8 @@ function appServerJs() {
   return `'use strict';
 /**
  * Generated app entry point. Thin wrapper: the whole front desk runs from
- * the shared template core, driven by this app's config.json.
+ * the shared template core, driven by this app's config.json, with this
+ * app's per-vertical dashboard from public/.
  */
 const path = require('path');
 const { start, loadConfig } = require('../../template/server');
@@ -73,8 +80,26 @@ const config = loadConfig(path.join(__dirname, 'config.json'));
 const args = process.argv.slice(2);
 const portArg = args.indexOf('--port');
 const port = portArg >= 0 ? Number(args[portArg + 1]) : Number(process.env.PORT) || 3000;
-start(config, { port, dataDir: path.join(__dirname, 'data') });
+start(config, { port, dataDir: path.join(__dirname, 'data'), publicDir: path.join(__dirname, 'public') });
 `;
+}
+
+// Per-vertical dashboard source dir inside template/. Auto repair and dental
+// have their own screens; every other type uses the generic dashboard.
+function dashboardDirFor(type) {
+  if (type === 'auto-repair') return 'public-auto';
+  if (type === 'dental-clinic') return 'public-dental';
+  return 'public';
+}
+
+function copyDashboard(config, outDir) {
+  const srcDir = path.join(__dirname, dashboardDirFor(config.business.type));
+  const destDir = path.join(outDir, 'public');
+  fs.mkdirSync(destDir, { recursive: true });
+  for (const file of ['index.html', 'dashboard.js', 'styles.css']) {
+    fs.copyFileSync(path.join(srcDir, file), path.join(destDir, file));
+  }
+  return dashboardDirFor(config.business.type);
 }
 
 function appPackageJson(config) {
@@ -94,9 +119,80 @@ function appPackageJson(config) {
 }
 
 function appSmokeTest(config) {
+  const isAuto = config.business.type === 'auto-repair';
+  const isDental = config.business.type === 'dental-clinic';
+  const marker = isAuto ? 'Repair estimate' : isDental ? 'Patients due for recall' : 'Book an appointment';
+  const verticalChecks = isAuto ? `
+  test('auto app: estimate endpoint answers from the RepairPal dataset', async () => {
+    const config = loadConfig(path.join(__dirname, '..', 'config.json'));
+    const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'frontdesk-test-'));
+    const { server } = createServer(config, { dataDir });
+    await new Promise((resolve) => server.listen(0, resolve));
+    const port = server.address().port;
+    try {
+      const res = await fetch(\`http://localhost:\${port}/api/estimate\`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ symptom: 'grinding noise when I brake' }) });
+      assert.equal(res.status, 200);
+      const body = await res.json();
+      assert.equal(body.matched, true);
+      assert.equal(body.serviceId, 'brake-pads');
+      assert.ok(body.priceMin <= body.priceMax);
+      assert.match(body.source, /RepairPal/);
+    } finally {
+      await new Promise((resolve) => server.close(resolve));
+    }
+  });` : isDental ? `
+  test('dental app: new-patient booking without insurance is rejected', async () => {
+    const config = loadConfig(path.join(__dirname, '..', 'config.json'));
+    const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'frontdesk-test-'));
+    const { server } = createServer(config, { dataDir });
+    await new Promise((resolve) => server.listen(0, resolve));
+    const port = server.address().port;
+    const base = \`http://localhost:\${port}\`;
+    try {
+      const date = nextWeekday();
+      const slots = await (await fetch(\`\${base}/api/slots?date=\${date}&serviceId=new-patient-exam\`)).json();
+      assert.ok(slots.slots.length > 0);
+      const bad = await fetch(\`\${base}/api/bookings\`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({
+        serviceId: 'new-patient-exam', date, startTime: slots.slots[0],
+        customerName: 'Ana Lee', phone: '+15550101',
+        intake: { fullName: 'Ana Lee', dateOfBirth: '1990-05-01', isNewPatient: true },
+        channel: 'sms',
+      }) });
+      assert.equal(bad.status, 400);
+      assert.equal((await bad.json()).error, 'INTAKE_INCOMPLETE');
+    } finally {
+      await new Promise((resolve) => server.close(resolve));
+    }
+  });
+
+  test('dental app: 180-day recall appears from a real past booking', async () => {
+    const config = loadConfig(path.join(__dirname, '..', 'config.json'));
+    const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'frontdesk-test-'));
+    const { server } = createServer(config, { dataDir });
+    await new Promise((resolve) => server.listen(0, resolve));
+    const port = server.address().port;
+    const base = \`http://localhost:\${port}\`;
+    try {
+      const past = new Date(Date.now() - 200 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+      const created = await fetch(\`\${base}/api/bookings\`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({
+        serviceId: 'cleaning', date: past, startTime: '10:00',
+        customerName: 'Bob Ray', phone: '+15550102',
+        intake: { fullName: 'Bob Ray', dateOfBirth: '1980-01-01', insuranceProvider: 'Delta Dental', healthHistory: 'None', isNewPatient: false },
+        channel: 'sms', status: 'completed',
+      }) });
+      assert.equal(created.status, 201);
+      const rem = await (await fetch(\`\${base}/api/reminders\`)).json();
+      assert.equal(rem.recalls.length, 1);
+      assert.equal(rem.recalls[0].customerName, 'Bob Ray');
+      assert.ok(rem.recalls[0].daysSince >= 180);
+    } finally {
+      await new Promise((resolve) => server.close(resolve));
+    }
+  });` : '';
   return `'use strict';
 /* Generated smoke test for ${config.business.name}. Boots the generated app
-   on a random port and checks the health endpoint answers with this business. */
+   on a random port and checks the health endpoint, the per-vertical dashboard,
+   and the vertical's core flow. */
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const os = require('os');
@@ -104,6 +200,14 @@ const path = require('path');
 const fs = require('fs');
 const { loadConfig } = require('../../../template/lib/config');
 const { createServer } = require('../../../template/server');
+
+function nextWeekday() {
+  // Next date that is a business day (Mon-Sat) at least 2 days out.
+  const d = new Date();
+  d.setDate(d.getDate() + 2);
+  while (d.getDay() === 0) d.setDate(d.getDate() + 1);
+  return d.toISOString().slice(0, 10);
+}
 
 test('generated app boots and answers /api/health', async () => {
   const config = loadConfig(path.join(__dirname, '..', 'config.json'));
@@ -121,6 +225,22 @@ test('generated app boots and answers /api/health', async () => {
     await new Promise((resolve) => server.close(resolve));
   }
 });
+
+test('generated app serves its per-vertical dashboard', async () => {
+  const config = loadConfig(path.join(__dirname, '..', 'config.json'));
+  const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'frontdesk-test-'));
+  const { server } = createServer(config, { dataDir, publicDir: path.join(__dirname, '..', 'public') });
+  await new Promise((resolve) => server.listen(0, resolve));
+  const port = server.address().port;
+  try {
+    const res = await fetch(\`http://localhost:\${port}/\`);
+    assert.equal(res.status, 200);
+    assert.match(await res.text(), /${marker}/);
+  } finally {
+    await new Promise((resolve) => server.close(resolve));
+  }
+});
+${verticalChecks}
 `;
 }
 
@@ -133,7 +253,8 @@ function generate(configPath, outDir) {
   fs.writeFileSync(path.join(absoluteOut, 'package.json'), JSON.stringify(appPackageJson(config), null, 2) + '\n');
   fs.writeFileSync(path.join(absoluteOut, 'README.md'), appReadme(config));
   fs.writeFileSync(path.join(absoluteOut, 'tests', 'smoke.test.js'), appSmokeTest(config));
-  return { config, outDir: absoluteOut };
+  const dashboard = copyDashboard(config, absoluteOut);
+  return { config, outDir: absoluteOut, dashboard };
 }
 
 if (require.main === module) {
@@ -143,10 +264,11 @@ if (require.main === module) {
     process.exit(2);
   }
   try {
-    const { config, outDir } = generate(args.config, args.out);
+    const { config, outDir, dashboard } = generate(args.config, args.out);
     console.log(`Generated ${config.business.name} (${config.business.type})`);
     console.log(`  config:   ${args.config}`);
     console.log(`  out:      ${outDir}`);
+    console.log(`  dashboard: template/${dashboard}/ -> ${path.join(args.out, 'public')}/`);
     console.log(`  services: ${config.services.map((s) => s.id).join(', ')}`);
     console.log(`  run:      node ${path.join(args.out, 'server.js')} --port 3000`);
   } catch (err) {

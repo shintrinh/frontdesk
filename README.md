@@ -52,7 +52,36 @@ Generate an app yourself:
 
 ```bash
 node template/generate.js --config config/fixit-auto.json --out apps/fixit-auto
+# or: node template/cli.js generate --config config/fixit-auto.json --out apps/fixit-auto
 ```
+
+Start from a blank config instead:
+
+```bash
+cp config/empty.json config/my-shop.json
+# fill in the shop, then:
+node template/cli.js validate --config config/my-shop.json
+node template/cli.js generate --config config/my-shop.json --out apps/my-shop
+```
+
+## The CLI — the second surface
+
+Besides the web dashboard, everything works from the terminal:
+
+```bash
+node template/cli.js validate --config config/fixit-auto.json
+node template/cli.js slots --config config/fixit-auto.json --date 2026-11-12 --service oil-change
+node template/cli.js estimate --config config/fixit-auto.json --symptom "grinding noise when I brake"
+node template/cli.js bookings --config apps/fixit-auto/config.json
+node template/cli.js serve --config config/fixit-auto.json --port 3000
+```
+
+## Deploy
+
+Both apps are deploy-ready on Render (free tier) via the Blueprint in
+`render.yaml`. No deploy credentials exist in this repo, so the live deploy
+is a 10-minute dashboard job — exact steps in `docs/DEPLOY.md`. Local run
+needs nothing but Node.
 
 ## Repo layout
 
@@ -81,9 +110,24 @@ This project is built spec-first with Kiro:
   suites after every spec task (`PostTaskExec`), syntax-check JS on save
   (`PostFileSave`), restate the ground rules at session start
   (`SessionStart`).
+- **Custom agent** — `.kiro/agents/vertical-config-reviewer.md`: reviews a
+  new vertical config for completeness before generation (schema, hours,
+  services, intake, sourced estimates, recall, honesty) and ends with
+  `VERDICT: PASS | FAIL`.
+- **Second surface** — the FrontDesk CLI (`template/cli.js`): validate,
+  generate, slots, estimate, bookings, serve. Tested in
+  `template/tests/cli.test.js`.
+- **Property-based tests** — `template/tests/properties.test.js`: a seeded
+  PRNG drives random booking attempts and random symptoms; the booking
+  property caught a real bug on Day 2 (bookings accepted on closed days —
+  fixed, and the property fails without the fix).
 - **Workflow log (Day 1, 2026-11-10):** spec written → config schema v0 →
   datasets sourced and cited → template core built → generator skeleton →
   tests green → live verification (see `docs/verification-day1.md`).
+- **Workflow log (Day 2, 2026-11-10):** full generation of both apps with
+  per-vertical dashboards → closed-day bug caught by PBT and fixed →
+  CLI + custom agent + empty template + worked-example vet spec →
+  deploy-ready via `render.yaml` (see `docs/verification-day2.md`).
 
 ## Datasets — named, sourced, honest
 
@@ -125,12 +169,18 @@ out, managed month to month.
 
 - **Day 1 (done):** repo + spec + configs + datasets + template core +
   generator skeleton + tests green + live verification.
-- **Day 2:** full generation of both apps, per-vertical dashboard screens,
-  deploy live, property-based test, custom agent/Power, second surface.
+- **Day 2 (done):** full generation of both apps, per-vertical dashboard
+  screens, property-based test (caught + fixed the closed-day bug), custom
+  agent, CLI second surface, empty template + worked-example vet spec,
+  deploy-ready via `render.yaml` (live URLs need the Render dashboard —
+  see `docs/DEPLOY.md`).
 - **Day 3:** pilot with 3 real people, demo video (< 3 min), submit early.
 
 ## Tests
 
 ```bash
-node --test "template/tests/*.test.js"
+node --test "template/tests/*.test.js" "apps/fixit-auto/tests/*.test.js" "apps/brightsmile-dental/tests/*.test.js"
+# Day 2: 31 tests — 12 template smoke + 4 generator + 6 CLI + 2 property-based
+# + 3 auto-app + 4 dental-app. All green in any server timezone (verified
+# under America/Los_Angeles, UTC, and Asia/Tokyo).
 ```

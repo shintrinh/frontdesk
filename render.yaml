@@ -1,0 +1,31 @@
+# Render Blueprint — deploys both FrontDesk apps as free Web Services.
+# Deploy: Render Dashboard → New → Blueprint → connect shintrinh/frontdesk
+# → Apply. See docs/DEPLOY.md for the exact steps.
+# Each service runs the generated app's thin server (zero dependencies,
+# no build step). Render sets PORT automatically; the server reads it.
+services:
+  - type: web
+    name: frontdesk-fixit-auto
+    runtime: node
+    plan: free
+    region: oregon
+    rootDir: apps/fixit-auto
+    buildCommand: echo "zero dependencies — nothing to build"
+    startCommand: node server.js
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
+    healthCheckPath: /api/health
+
+  - type: web
+    name: frontdesk-brightsmile-dental
+    runtime: node
+    plan: free
+    region: oregon
+    rootDir: apps/brightsmile-dental
+    buildCommand: echo "zero dependencies — nothing to build"
+    startCommand: node server.js
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
+    healthCheckPath: /api/health

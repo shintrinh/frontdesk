@@ -8,21 +8,30 @@ fileMatchPattern: "**/*"
 ```
 frontdesk/
 ├── .kiro/
-│   ├── specs/frontdesk-template/   # requirements.md, design.md, tasks.md
-│   ├── steering/                   # product.md, tech.md, this file
-│   └── hooks/                      # *.json, v1 schema (IDE 1.0 / CLI V3)
-├── config/                         # schema.json + one JSON per business
-├── datasets/                       # named, sourced sample datasets + README
-├── template/                       # the reusable core
-│   ├── lib/                        # config, booking, estimate, reminders, store
-│   ├── public/                     # dashboard (renders from /api/config)
-│   ├── tests/                      # node:test suites
-│   ├── server.js                   # zero-dep entry point
-│   └── generate.js                 # vertical-generator: config -> app
+│   ├── specs/
+│   │   ├── frontdesk-template/   # requirements.md, design.md, tasks.md
+│   │   └── add-vertical/         # worked example: how to add a vertical
+│   ├── steering/                 # product.md, tech.md, this file
+│   ├── hooks/                    # *.json, v1 schema (IDE 1.0 / CLI V3)
+│   └── agents/                   # vertical-config-reviewer.md
+├── config/                       # schema.json + one JSON per business
+│   ├── empty.json                # blank starting point for a new vertical
+│   └── paws-vet.json             # worked example (vet clinic, 365-day recall)
+├── datasets/                     # named, sourced sample datasets + README
+├── template/                     # the reusable core
+│   ├── lib/                      # config, booking, estimate, reminders, store
+│   ├── public/                   # generic dashboard (fallback for new types)
+│   ├── public-auto/              # estimate-first dashboard
+│   ├── public-dental/            # recall-first dashboard
+│   ├── tests/                    # node:test suites (smoke, generator, CLI, PBT)
+│   ├── server.js                 # zero-dep entry point
+│   ├── cli.js                    # second surface: validate/generate/slots/estimate/bookings/serve
+│   └── generate.js               # vertical-generator: config -> app
 ├── apps/
-│   ├── fixit-auto/                 # generated from config/fixit-auto.json
-│   └── brightsmile-dental/         # generated from config/brightsmile-dental.json
-├── docs/                           # verification logs
+│   ├── fixit-auto/               # generated from config/fixit-auto.json
+│   └── brightsmile-dental/       # generated from config/brightsmile-dental.json
+├── docs/                         # verification logs + DEPLOY.md
+├── render.yaml                   # Render Blueprint (both apps, free tier)
 └── README.md
 ```
 

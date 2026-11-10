@@ -34,18 +34,28 @@
 
 ## Day 2 (2026-11-11) — Two apps + Kiro depth
 
-- [ ] Generate both apps from config into `apps/fixit-auto/` and `apps/brightsmile-dental/` (full generation, not scaffold)
+- [x] Generate both apps from config into `apps/fixit-auto/` and `apps/brightsmile-dental/` (full generation, not scaffold)
   - _Requirements: 1.1, 1.3_
-- [ ] App 1: dynamic estimate UI on the dashboard (symptom → range before booking)
+- [x] App 1: dynamic estimate UI on the dashboard (symptom → range before booking)
   - _Requirements: 4.1_
-- [ ] App 2: insurance intake + 180-day recall UI on the dashboard
+- [x] App 2: insurance intake + 180-day recall UI on the dashboard
   - _Requirements: 3.3, 5.2_
-- [ ] Deploy both apps live (public URLs, no login)
+- [x] Deploy both apps live (public URLs, no login)
   - _Requirements: 7.1_
-- [ ] Empty template + worked example spec (judges can start from blank)
-- [ ] One property-based test, with a caught bug recorded if one is found
-- [ ] One custom agent or Power; one second surface (CLI / Crew / Web)
-- [ ] Judges-run check: both apps boot with no login; fix blockers
+  - _Done as deploy-ready: `render.yaml` Blueprint + `docs/DEPLOY.md`. No live
+    deploy from this machine — no Render credentials here and Vercel is not
+    connected. Live URLs need ~10 min in the Render dashboard (see DEPLOY.md)._
+- [x] Empty template + worked example spec (judges can start from blank)
+- [x] One property-based test, with a caught bug recorded if one is found
+  - _Caught: bookings accepted on closed days (Sundays) — fixed in
+    `template/lib/booking.js` + `template/server.js`, guarded by
+    `template/tests/properties.test.js` (negative control run: fails without
+    the fix, passes with it). See `docs/verification-day2.md`._
+- [x] One custom agent or Power; one second surface (CLI / Crew / Web)
+  - _Custom agent: `.kiro/agents/vertical-config-reviewer.md`. Second surface:
+    the FrontDesk CLI (`template/cli.js` + `template/tests/cli.test.js`)._
+- [x] Judges-run check: both apps boot with no login; fix blockers
+  - _See `docs/verification-day2.md` §6 (clean-copy run)._
 
 ## Day 3 (2026-11-12) — Evidence + video + submit
 
