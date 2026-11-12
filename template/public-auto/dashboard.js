@@ -35,6 +35,12 @@ async function init() {
   const svc = await api('/api/services');
   services = svc.services;
   datasetInfo = svc.dataset;
+  // Symptom autocomplete (pilot feedback): offer dataset keywords as the
+  // customer types, so "grind" suggests "grinding".
+  if (svc.suggestions && svc.suggestions.length > 0) {
+    const dl = $('symptom-suggestions');
+    if (dl) dl.innerHTML = svc.suggestions.map((k) => `<option value="${String(k).replace(/"/g, '&quot;')}">`).join('');
+  }
   $('business-name').textContent = config.business.name;
   $('business-meta').textContent = `${config.business.type} · ${config.business.address} · ${config.business.phone} · ${config.business.hours.open}–${config.business.hours.close}`;
   $('service').innerHTML = services.map((s) => {
@@ -55,13 +61,20 @@ async function init() {
 }
 
 let estimatedServiceId = null;
+let estimatedSymptom = null;
 
 function bookEstimatedService() {
   if (!estimatedServiceId) return;
   $('service').value = estimatedServiceId;
+  // Carry the symptom the customer typed into the booking form, so they
+  // never have to type it twice (pilot feedback: the estimate step and the
+  // booking step felt like two separate forms).
+  const symptomField = $('intake-symptomDescription');
+  if (symptomField && estimatedSymptom) symptomField.value = estimatedSymptom;
   loadSlots().then(() => {
     $('booking-form').scrollIntoView({ behavior: 'smooth' });
-    $('service').focus();
+    if (symptomField) symptomField.focus();
+    else $('service').focus();
   });
 }
 
@@ -90,8 +103,26 @@ function renderIntake() {
       input.type = 'text';
     }
     input.id = `intake-${field}`;
+    // Minimal form (pilot feedback): only name + phone are required. The
+    // rest ships pre-filled with editable defaults; the server applies the
+    // same defaults when a field is left blank.
+    const OPTIONAL_PLACEHOLDER = {
+      vehicleYearMakeModel: 'Optional — e.g. 2018 Honda Civic',
+      mileage: 'Optional',
+      symptomDescription: 'Optional — or get an estimate above first',
+      lastVisitDate: 'Optional',
+    };
+    if (field === 'insuranceProvider') input.value = 'Delta Dental';
+    else if (field === 'healthHistory') input.value = 'None';
+    else if (OPTIONAL_PLACEHOLDER[field]) input.placeholder = OPTIONAL_PLACEHOLDER[field];
     if (!(config.intakeOptional || []).includes(field)) input.required = true;
     label.appendChild(input);
+    if (field === 'dateOfBirth') {
+      const hint = document.createElement('span');
+      hint.className = 'muted';
+      hint.textContent = 'Optional — you can add it later.';
+      label.appendChild(hint);
+    }
     wrap.appendChild(label);
   }
 }
@@ -123,13 +154,15 @@ function readIntake() {
 
 async function submitBooking(event) {
   event.preventDefault();
+  const intake = readIntake();
+  if (!intake.fullName) intake.fullName = $('customer-name').value;
   const body = {
     serviceId: $('service').value,
     date: $('date').value,
     startTime: $('slot').value,
     customerName: $('customer-name').value,
     phone: $('phone').value,
-    intake: readIntake(),
+    intake,
     channel: $('channel').value,
   };
   try {
@@ -149,15 +182,18 @@ async function runEstimate() {
     if (data.matched) {
       $('estimate-out').textContent = `${data.serviceName}: $${data.priceMin}–$${data.priceMax}, about ${data.timeMinMin}–${data.timeMaxMin} min.\nBasis: ${data.basis}\n${data.disclaimer}`;
       estimatedServiceId = data.serviceId;
+      estimatedSymptom = symptom;
       $('book-estimate-btn').hidden = false;
     } else {
       $('estimate-out').textContent = data.message;
       estimatedServiceId = null;
+      estimatedSymptom = null;
       $('book-estimate-btn').hidden = true;
     }
   } catch (err) {
     $('estimate-out').textContent = `Estimate unavailable: ${err.message}`;
     estimatedServiceId = null;
+    estimatedSymptom = null;
     $('book-estimate-btn').hidden = true;
   }
 }

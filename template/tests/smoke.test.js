@@ -139,6 +139,102 @@ test('confirmations + recalls are computed from real bookings only', () => {
   assert.ok(recalls[0].daysSince >= 180);
 });
 
+test('server defaults: minimal booking (name + phone only) succeeds with SMS channel', async () => {
+  const config = loadConfig(AUTO_CONFIG);
+  const { server } = createServer(config, { dataDir: tmpDataDir() });
+  await new Promise((resolve) => server.listen(0, resolve));
+  const port = server.address().port;
+  const base = `http://localhost:${port}`;
+  try {
+    const res = await fetch(`${base}/api/bookings`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({
+      customerName: 'Min Driver', phone: '+15550103',
+    }) });
+    assert.equal(res.status, 201);
+    const body = await res.json();
+    assert.equal(body.booking.serviceId, 'oil-change');
+    assert.equal(body.booking.channel, 'sms');
+    assert.ok(body.booking.date);
+    assert.ok(body.booking.startTime);
+    // Still a hard error when even name/phone are missing.
+    const bad = await fetch(`${base}/api/bookings`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ phone: '+15550103' }) });
+    assert.equal(bad.status, 400);
+    assert.equal((await bad.json()).error, 'MISSING_FIELDS');
+  } finally {
+    await new Promise((resolve) => server.close(resolve));
+  }
+});
+
+test('server defaults: minimal dental booking gets Delta Dental + new-patient defaults', async () => {
+  const config = loadConfig(DENTAL_CONFIG);
+  const { server } = createServer(config, { dataDir: tmpDataDir() });
+  await new Promise((resolve) => server.listen(0, resolve));
+  const port = server.address().port;
+  const base = `http://localhost:${port}`;
+  try {
+    const res = await fetch(`${base}/api/bookings`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({
+      customerName: 'Min Patient', phone: '+15550104',
+    }) });
+    assert.equal(res.status, 201);
+    const body = await res.json();
+    assert.equal(body.booking.channel, 'sms');
+    assert.equal(body.booking.intake.insuranceProvider, 'Delta Dental');
+    assert.equal(body.booking.intake.healthHistory, 'None');
+    assert.equal(body.booking.intake.isNewPatient, true);
+    assert.equal(body.booking.intake.fullName, 'Min Patient');
+  } finally {
+    await new Promise((resolve) => server.close(resolve));
+  }
+});
+
+test('api/services returns symptom suggestions, including grinding', async () => {
+  const config = loadConfig(AUTO_CONFIG);
+  const { server } = createServer(config, { dataDir: tmpDataDir() });
+  await new Promise((resolve) => server.listen(0, resolve));
+  const port = server.address().port;
+  try {
+    const svc = await (await fetch(`http://localhost:${port}/api/services`)).json();
+    assert.ok(Array.isArray(svc.suggestions));
+    assert.ok(svc.suggestions.includes('grinding'));
+    assert.ok(svc.suggestions.includes('oil change'));
+    assert.ok(svc.suggestions.includes('battery light'));
+  } finally {
+    await new Promise((resolve) => server.close(resolve));
+  }
+});
+
+test('served dashboards carry the intro line, SMS first, and the estimate-to-booking symptom handoff', async () => {
+  for (const [cfgPath, publicDir, introRe] of [
+    [AUTO_CONFIG, path.join(ROOT, 'template', 'public-auto'), /online booking page for a small auto repair shop/],
+    [DENTAL_CONFIG, path.join(ROOT, 'template', 'public-dental'), /online booking page for a dental clinic/],
+  ]) {
+    const config = loadConfig(cfgPath);
+    const { server } = createServer(config, { dataDir: tmpDataDir(), publicDir });
+    await new Promise((resolve) => server.listen(0, resolve));
+    const port = server.address().port;
+    const base = `http://localhost:${port}`;
+    try {
+      const html = await (await fetch(`${base}/`)).text();
+      assert.match(html, introRe);
+      assert.ok(html.indexOf('value="sms"') !== -1 && html.indexOf('value="sms"') < html.indexOf('value="voice"'), 'SMS must come before Voice in the channel selector');
+    } finally {
+      await new Promise((resolve) => server.close(resolve));
+    }
+  }
+  // Auto dashboard wires the estimate symptom into the booking form.
+  const auto = loadConfig(AUTO_CONFIG);
+  const { server } = createServer(auto, { dataDir: tmpDataDir(), publicDir: path.join(ROOT, 'template', 'public-auto') });
+  await new Promise((resolve) => server.listen(0, resolve));
+  const port = server.address().port;
+  try {
+    const js = await (await fetch(`http://localhost:${port}/dashboard.js`)).text();
+    assert.match(js, /intake-symptomDescription/);
+    assert.match(js, /estimatedSymptom/);
+    assert.match(js, /symptom-suggestions/);
+  } finally {
+    await new Promise((resolve) => server.close(resolve));
+  }
+});
+
 test('HTTP: booking flow end to end, double-booking returns 409', async () => {
   const config = loadConfig(AUTO_CONFIG);
   const { server } = createServer(config, { dataDir: tmpDataDir() });

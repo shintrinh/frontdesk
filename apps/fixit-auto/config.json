@@ -19,8 +19,8 @@
     "type": "auto-repair"
   },
   "channels": [
-    "voice",
-    "sms"
+    "sms",
+    "voice"
   ],
   "estimate": {
     "dataset": "datasets/auto-repair-estimates.sample.json",
@@ -32,7 +32,11 @@
     "mileage",
     "symptomDescription"
   ],
-  "intakeOptional": [],
+  "intakeOptional": [
+    "vehicleYearMakeModel",
+    "mileage",
+    "symptomDescription"
+  ],
   "language": "en",
   "reminders": {
     "confirmHoursBefore": 24,

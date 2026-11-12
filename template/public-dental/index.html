@@ -10,6 +10,7 @@
 <header>
   <h1 id="business-name">FrontDesk</h1>
   <p id="business-meta"></p>
+  <p id="business-intro" class="intro">This is an online booking page for a dental clinic in the US. New patients can complete the intake — insurance and health history — and book an exam online. No phone call, no account, no payment.</p>
 </header>
 <main>
   <section class="card" id="recall-card">
@@ -20,16 +21,16 @@
 
   <section class="card">
     <h2>Book an appointment</h2>
-    <p class="muted">New patients: insurance provider and health history are required — the front desk collects them at booking time.</p>
+    <p class="muted">New patients: insurance defaults to Delta Dental and health history to None — change them if needed. Date of birth is optional and can be added later.</p>
     <form id="booking-form">
-      <label>Service <select id="service" required></select></label>
-      <label>Date <input id="date" type="date" required></label>
-      <label>Time <select id="slot" required><option value="">Pick a date + service first</option></select></label>
+      <label>Service <select id="service"></select></label>
+      <label>Date <input id="date" type="date"></label>
+      <label>Time <select id="slot"><option value="">Pick a date + service first</option></select></label>
       <label>Name <input id="customer-name" type="text" required></label>
       <label>Phone <input id="phone" type="tel" required></label>
       <div id="intake-fields"></div>
       <label>Channel
-        <select id="channel"><option value="voice">Voice</option><option value="sms">SMS</option></select>
+        <select id="channel"><option value="sms">SMS</option><option value="voice">Voice</option></select>
       </label>
       <button type="submit">Book appointment</button>
     </form>

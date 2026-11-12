@@ -13,8 +13,8 @@ const http = require('http');
 const path = require('path');
 const { loadConfig, slug } = require('./lib/config');
 const { Store } = require('./lib/store');
-const { listSlots, slotIsFree, validateIntake, isOpenDay } = require('./lib/booking');
-const { loadDataset, estimate } = require('./lib/estimate');
+const { listSlots, slotIsFree, validateIntake, isOpenDay, nextOpenDay, applyIntakeDefaults } = require('./lib/booking');
+const { loadDataset, estimate, symptomKeywords } = require('./lib/estimate');
 const { confirmationsDue, recallsDue, confirmationMessage, recallMessage } = require('./lib/reminders');
 
 const PUBLIC_DIR = path.join(__dirname, 'public');
@@ -85,7 +85,12 @@ function createServer(config, opts = {}) {
         return sendJson(res, 200, publicConfig);
       }
       if (req.method === 'GET' && url.pathname === '/api/services') {
-        return sendJson(res, 200, { services: config.services, dataset: dataset ? { name: dataset.name, source: dataset.source } : null });
+        return sendJson(res, 200, {
+          services: config.services,
+          dataset: dataset ? { name: dataset.name, source: dataset.source } : null,
+          // As-you-type suggestions for the symptom field (auto vertical).
+          suggestions: dataset ? symptomKeywords(dataset) : [],
+        });
       }
       if (req.method === 'GET' && url.pathname === '/api/slots') {
         const date = url.searchParams.get('date');
@@ -97,22 +102,38 @@ function createServer(config, opts = {}) {
       }
       if (req.method === 'POST' && url.pathname === '/api/bookings') {
         const body = await readBody(req);
-        const { serviceId, date, startTime, customerName, phone, intake, channel, status } = body;
-        if (!serviceId || !date || !startTime || !customerName || !phone) {
-          return sendJson(res, 400, { error: 'MISSING_FIELDS', message: 'serviceId, date, startTime, customerName, phone are required' });
+        // Minimal form (pilot feedback, Day 3): only name + phone are
+        // required. Everything else gets the same defaults the dashboard
+        // pre-fills in the form, so a name+phone-only POST still books.
+        let { serviceId, date, startTime, customerName, phone, intake, channel, status } = body;
+        if (!customerName || !phone) {
+          return sendJson(res, 400, { error: 'MISSING_FIELDS', message: 'customerName, phone are required' });
         }
+        serviceId = serviceId || (config.services[0] && config.services[0].id);
         if (!config.services.some((s) => s.id === serviceId)) {
           return sendJson(res, 400, { error: 'UNKNOWN_SERVICE', message: `unknown service: ${serviceId}` });
+        }
+        date = date || nextOpenDay(config, new Date().toISOString().slice(0, 10));
+        if (!date) {
+          return sendJson(res, 400, { error: 'NO_SLOTS', message: 'No open days in the next two weeks' });
+        }
+        if (!startTime) {
+          const grid = listSlots(config, date, serviceId, store.bookings);
+          startTime = (!grid.closed && grid.slots.length > 0) ? grid.slots[0] : '';
+        }
+        if (!startTime) {
+          return sendJson(res, 400, { error: 'NO_SLOTS', message: `No availability for ${serviceId} on ${date}` });
         }
         if (!isOpenDay(config, date)) {
           return sendJson(res, 400, { error: 'CLOSED', message: `The shop is closed on ${date}` });
         }
-        const intakeError = validateIntake(config, intake || {});
+        const intakeWithDefaults = applyIntakeDefaults(config, intake || {}, customerName);
+        const intakeError = validateIntake(config, intakeWithDefaults);
         if (intakeError) return sendJson(res, 400, { error: 'INTAKE_INCOMPLETE', message: intakeError });
         if (!slotIsFree(config, date, serviceId, startTime, store.bookings)) {
           return sendJson(res, 409, { error: 'SLOT_TAKEN', message: `No availability for ${serviceId} on ${date} at ${startTime}` });
         }
-        const booking = store.addBooking({ serviceId, date, startTime, customerName, phone, intake: intake || {}, channel: channel || 'voice', status });
+        const booking = store.addBooking({ serviceId, date, startTime, customerName, phone, intake: intakeWithDefaults, channel: channel || 'sms', status });
         return sendJson(res, 201, { booking });
       }
       if (req.method === 'GET' && url.pathname === '/api/bookings') {

@@ -50,7 +50,7 @@ test('generated app serves its per-vertical dashboard', async () => {
   }
 });
 
-  test('dental app: new-patient booking without insurance is rejected', async () => {
+  test('dental app: new-patient booking without insurance gets the Delta Dental default', async () => {
     const config = loadConfig(path.join(__dirname, '..', 'config.json'));
     const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'frontdesk-test-'));
     const { server } = createServer(config, { dataDir });
@@ -61,14 +61,40 @@ test('generated app serves its per-vertical dashboard', async () => {
       const date = nextWeekday();
       const slots = await (await fetch(`${base}/api/slots?date=${date}&serviceId=new-patient-exam`)).json();
       assert.ok(slots.slots.length > 0);
-      const bad = await fetch(`${base}/api/bookings`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({
+      const ok = await fetch(`${base}/api/bookings`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({
         serviceId: 'new-patient-exam', date, startTime: slots.slots[0],
         customerName: 'Ana Lee', phone: '+15550101',
         intake: { fullName: 'Ana Lee', dateOfBirth: '1990-05-01', isNewPatient: true },
         channel: 'sms',
       }) });
-      assert.equal(bad.status, 400);
-      assert.equal((await bad.json()).error, 'INTAKE_INCOMPLETE');
+      assert.equal(ok.status, 201);
+      const created = await ok.json();
+      assert.equal(created.booking.intake.insuranceProvider, 'Delta Dental');
+      assert.equal(created.booking.intake.healthHistory, 'None');
+    } finally {
+      await new Promise((resolve) => server.close(resolve));
+    }
+  });
+
+  test('dental app: minimal booking (name + phone only) gets server defaults', async () => {
+    const config = loadConfig(path.join(__dirname, '..', 'config.json'));
+    const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'frontdesk-test-'));
+    const { server } = createServer(config, { dataDir });
+    await new Promise((resolve) => server.listen(0, resolve));
+    const port = server.address().port;
+    const base = `http://localhost:${port}`;
+    try {
+      const res = await fetch(`${base}/api/bookings`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({
+        customerName: 'Min Patient', phone: '+15550104',
+      }) });
+      assert.equal(res.status, 201);
+      const body = await res.json();
+      assert.equal(body.booking.serviceId, 'cleaning');
+      assert.equal(body.booking.channel, 'sms');
+      assert.equal(body.booking.intake.insuranceProvider, 'Delta Dental');
+      assert.equal(body.booking.intake.isNewPatient, true);
+      assert.ok(body.booking.date);
+      assert.ok(body.booking.startTime);
     } finally {
       await new Promise((resolve) => server.close(resolve));
     }
@@ -82,7 +108,10 @@ test('generated app serves its per-vertical dashboard', async () => {
     const port = server.address().port;
     const base = `http://localhost:${port}`;
     try {
-      const past = new Date(Date.now() - 200 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+      // At least 180 days back, stepped off Sundays (the shop is closed then).
+      const pastDate = new Date(Date.now() - 200 * 24 * 60 * 60 * 1000);
+      while (pastDate.getUTCDay() === 0) pastDate.setUTCDate(pastDate.getUTCDate() - 1);
+      const past = pastDate.toISOString().slice(0, 10);
       const created = await fetch(`${base}/api/bookings`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({
         serviceId: 'cleaning', date: past, startTime: '10:00',
         customerName: 'Bob Ray', phone: '+15550102',

@@ -83,4 +83,32 @@ function validateIntake(config, intake) {
   return null;
 }
 
-module.exports = { listSlots, slotIsFree, validateIntake, toMinutes, toHHMM, weekdayOf, isOpenDay };
+// Next open day on or after fromDateISO (YYYY-MM-DD), scanning forward at
+// most two weeks. Dates are UTC, like the rest of this file, so the result
+// never depends on the server's local timezone.
+function nextOpenDay(config, fromDateISO) {
+  const [y, mo, d] = fromDateISO.split('-').map(Number);
+  const start = Date.UTC(y, mo - 1, d);
+  for (let i = 0; i < 14; i += 1) {
+    const iso = new Date(start + i * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+    if (isOpenDay(config, iso)) return iso;
+  }
+  return null;
+}
+
+// Minimal-form defaults (pilot feedback: only name + phone are required).
+// The dashboard pre-fills these same defaults in the form; the server
+// applies them when a field arrives missing, so a name+phone-only POST
+// still books. Returns a new object; the caller's intake is untouched.
+function applyIntakeDefaults(config, intake, customerName) {
+  const out = { ...(intake || {}) };
+  if (!out.fullName && customerName) out.fullName = customerName;
+  if (config.business.type === 'dental-clinic') {
+    if (!out.insuranceProvider) out.insuranceProvider = 'Delta Dental';
+    if (!out.healthHistory) out.healthHistory = 'None';
+    if (out.isNewPatient === undefined) out.isNewPatient = true;
+  }
+  return out;
+}
+
+module.exports = { listSlots, slotIsFree, validateIntake, toMinutes, toHHMM, weekdayOf, isOpenDay, nextOpenDay, applyIntakeDefaults };

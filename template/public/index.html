@@ -10,12 +10,14 @@
 <header>
   <h1 id="business-name">FrontDesk</h1>
   <p id="business-meta"></p>
+  <p id="business-intro" class="intro">Book an appointment online — no phone call, no account, no payment.</p>
 </header>
 <main>
   <section class="card" id="estimate-card" hidden>
     <h2>Repair estimate</h2>
     <p>Describe the symptom — the estimate comes from the named dataset, never invented.</p>
-    <input id="symptom" type="text" placeholder="e.g. grinding noise when braking">
+    <input id="symptom" type="text" list="symptom-suggestions" placeholder="e.g. grinding noise when braking" autocomplete="off">
+    <datalist id="symptom-suggestions"></datalist>
     <button id="estimate-btn">Get estimate</button>
     <pre id="estimate-out"></pre>
   </section>
@@ -23,14 +25,14 @@
   <section class="card">
     <h2>Book an appointment</h2>
     <form id="booking-form">
-      <label>Service <select id="service" required></select></label>
-      <label>Date <input id="date" type="date" required></label>
-      <label>Time <select id="slot" required><option value="">Pick a date + service first</option></select></label>
+      <label>Service <select id="service"></select></label>
+      <label>Date <input id="date" type="date"></label>
+      <label>Time <select id="slot"><option value="">Pick a date + service first</option></select></label>
       <label>Name <input id="customer-name" type="text" required></label>
       <label>Phone <input id="phone" type="tel" required></label>
       <div id="intake-fields"></div>
       <label>Channel
-        <select id="channel"><option value="voice">Voice</option><option value="sms">SMS</option></select>
+        <select id="channel"><option value="sms">SMS</option><option value="voice">Voice</option></select>
       </label>
       <button type="submit">Book appointment</button>
     </form>

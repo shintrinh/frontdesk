@@ -32,6 +32,12 @@ async function init() {
   config = await api('/api/config');
   const svc = await api('/api/services');
   services = svc.services;
+  // Symptom autocomplete (pilot feedback): offer dataset keywords as the
+  // customer types, so "grind" suggests "grinding".
+  if (svc.suggestions && svc.suggestions.length > 0) {
+    const dl = $('symptom-suggestions');
+    if (dl) dl.innerHTML = svc.suggestions.map((k) => `<option value="${String(k).replace(/"/g, '&quot;')}">`).join('');
+  }
   $('business-name').textContent = config.business.name;
   $('business-meta').textContent = `${config.business.type} · ${config.business.address} · ${config.business.phone} · ${config.business.hours.open}–${config.business.hours.close}`;
   $('service').innerHTML = services.map((s) => `<option value="${s.id}">${s.name} (${s.durationMin} min)</option>`).join('');
@@ -72,8 +78,26 @@ function renderIntake() {
       input.type = 'text';
     }
     input.id = `intake-${field}`;
+    // Minimal form (pilot feedback): only name + phone are required. The
+    // rest ships pre-filled with editable defaults; the server applies the
+    // same defaults when a field is left blank.
+    const OPTIONAL_PLACEHOLDER = {
+      vehicleYearMakeModel: 'Optional — e.g. 2018 Honda Civic',
+      mileage: 'Optional',
+      symptomDescription: 'Optional — or get an estimate above first',
+      lastVisitDate: 'Optional',
+    };
+    if (field === 'insuranceProvider') input.value = 'Delta Dental';
+    else if (field === 'healthHistory') input.value = 'None';
+    else if (OPTIONAL_PLACEHOLDER[field]) input.placeholder = OPTIONAL_PLACEHOLDER[field];
     if (!(config.intakeOptional || []).includes(field)) input.required = true;
     label.appendChild(input);
+    if (field === 'dateOfBirth') {
+      const hint = document.createElement('span');
+      hint.className = 'muted';
+      hint.textContent = 'Optional — you can add it later.';
+      label.appendChild(hint);
+    }
     wrap.appendChild(label);
   }
 }
@@ -105,13 +129,15 @@ function readIntake() {
 
 async function submitBooking(event) {
   event.preventDefault();
+  const intake = readIntake();
+  if (!intake.fullName) intake.fullName = $('customer-name').value;
   const body = {
     serviceId: $('service').value,
     date: $('date').value,
     startTime: $('slot').value,
     customerName: $('customer-name').value,
     phone: $('phone').value,
-    intake: readIntake(),
+    intake,
     channel: $('channel').value,
   };
   try {

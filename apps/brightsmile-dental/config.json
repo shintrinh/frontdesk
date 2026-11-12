@@ -19,8 +19,8 @@
     "type": "dental-clinic"
   },
   "channels": [
-    "voice",
-    "sms"
+    "sms",
+    "voice"
   ],
   "estimate": {
     "enabled": false
@@ -34,7 +34,9 @@
     "lastVisitDate"
   ],
   "intakeOptional": [
-    "lastVisitDate"
+    "lastVisitDate",
+    "dateOfBirth",
+    "fullName"
   ],
   "language": "en",
   "reminders": {

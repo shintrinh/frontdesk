@@ -68,3 +68,25 @@ test('generated app serves its per-vertical dashboard', async () => {
       await new Promise((resolve) => server.close(resolve));
     }
   });
+
+  test('auto app: minimal booking (name + phone only) gets server defaults', async () => {
+    const config = loadConfig(path.join(__dirname, '..', 'config.json'));
+    const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'frontdesk-test-'));
+    const { server } = createServer(config, { dataDir });
+    await new Promise((resolve) => server.listen(0, resolve));
+    const port = server.address().port;
+    const base = `http://localhost:${port}`;
+    try {
+      const res = await fetch(`${base}/api/bookings`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({
+        customerName: 'Min Driver', phone: '+15550103',
+      }) });
+      assert.equal(res.status, 201);
+      const body = await res.json();
+      assert.equal(body.booking.serviceId, 'oil-change');
+      assert.equal(body.booking.channel, 'sms');
+      assert.ok(body.booking.date);
+      assert.ok(body.booking.startTime);
+    } finally {
+      await new Promise((resolve) => server.close(resolve));
+    }
+  });

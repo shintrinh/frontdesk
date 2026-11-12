@@ -13,6 +13,26 @@ function loadDataset(datasetPath) {
   return JSON.parse(fs.readFileSync(absolute, 'utf8'));
 }
 
+// Deduplicated symptom keywords from the dataset, in dataset order. The
+// dashboard offers these as you-type suggestions for the symptom field, so
+// a customer who types "grind" is offered "grinding" (and the estimate
+// engine then matches it by substring, as before).
+function symptomKeywords(dataset) {
+  if (!dataset || !Array.isArray(dataset.entries)) return [];
+  const seen = new Set();
+  const out = [];
+  for (const entry of dataset.entries) {
+    for (const keyword of entry.symptomKeywords || []) {
+      const key = String(keyword).toLowerCase();
+      if (!seen.has(key)) {
+        seen.add(key);
+        out.push(keyword);
+      }
+    }
+  }
+  return out;
+}
+
 function estimate(config, dataset, symptom, serviceId) {
   if (!config.estimate || config.estimate.enabled !== true) {
     return { error: 'ESTIMATES_DISABLED', message: 'This business does not offer estimates.' };
@@ -60,4 +80,4 @@ function estimate(config, dataset, symptom, serviceId) {
   };
 }
 
-module.exports = { loadDataset, estimate };
+module.exports = { loadDataset, estimate, symptomKeywords };

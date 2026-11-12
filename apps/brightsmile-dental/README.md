@@ -6,7 +6,7 @@ Do not edit this app by hand — change the config and re-run the generator.
 - Business type: dental-clinic
 - Timezone: America/New_York
 - Hours: 09:00–17:00, days 1,2,3,4,5,6
-- Channels: voice, sms
+- Channels: sms, voice
 - Repair estimates: disabled for this vertical
 - Recall cycle: every 180 days
 
