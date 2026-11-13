@@ -1,6 +1,9 @@
-# Render Blueprint — deploys both FrontDesk apps as free Web Services.
+# Render Blueprint — deploys the FrontDesk apps as free Web Services.
 # Deploy: Render Dashboard → New → Blueprint → connect shintrinh/frontdesk
 # → Apply. See docs/DEPLOY.md for the exact steps.
+# NOTE: do NOT sync the Blueprint to add a service — a sync wipes the
+# manually-set DATABASE_URL (Neon) from the existing services. Create a
+# new service manually in the dashboard instead (same name/rootDir as here).
 # Each service runs the generated app's thin server (see template/server.js).
 # Render sets PORT automatically; the server reads it. The build installs
 # the template's one dependency (pg) into template/node_modules, which is
@@ -31,6 +34,19 @@ services:
     plan: free
     region: oregon
     rootDir: apps/brightsmile-dental
+    buildCommand: npm install --prefix ../../template
+    startCommand: node server.js
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
+    healthCheckPath: /api/health
+
+  - type: web
+    name: frontdesk-cafe-grumpy
+    runtime: node
+    plan: free
+    region: oregon
+    rootDir: apps/cafe-grumpy
     buildCommand: npm install --prefix ../../template
     startCommand: node server.js
     envVars:
