@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Build your front desk — FrontDesk config builder</title>
+<style>
+  body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; color: #1a2b45; background: #f6f8fa; margin: 0; padding: 0 16px 64px; }
+  main { max-width: 720px; margin: 0 auto; }
+  h1 { font-size: 28px; margin: 32px 0 4px; }
+  .sub { color: #5b6b80; margin: 0 0 24px; }
+  section { background: #fff; border: 1px solid #dbe2ea; border-radius: 10px; padding: 20px; margin-bottom: 16px; }
+  h2 { font-size: 18px; margin: 0 0 4px; }
+  .hint { color: #5b6b80; font-size: 14px; margin: 0 0 16px; }
+  label { display: block; font-size: 14px; font-weight: 600; margin: 12px 0 4px; }
+  input[type="text"], input[type="number"], input[type="time"], select { width: 100%; box-sizing: border-box; padding: 9px 10px; font-size: 15px; border: 1px solid #c3cedb; border-radius: 6px; }
+  input.error, select.error { border-color: #c0392b; background: #fdf2f2; }
+  .row { display: flex; gap: 12px; }
+  .row > div { flex: 1; }
+  .days { display: flex; flex-wrap: wrap; gap: 6px 16px; margin-top: 6px; }
+  .days label, .checks label { display: inline-flex; align-items: center; gap: 6px; font-weight: 400; margin: 0; }
+  .checks { display: flex; gap: 20px; margin-top: 6px; }
+  .service { border: 1px solid #dbe2ea; border-radius: 8px; padding: 12px; margin-bottom: 12px; background: #fbfcfe; }
+  .service .row { align-items: end; }
+  .service h3 { margin: 0 0 4px; font-size: 15px; }
+  .remove { background: none; border: none; color: #c0392b; cursor: pointer; font-size: 14px; padding: 4px 0; }
+  .add { background: #eef3f8; border: 1px solid #c3cedb; border-radius: 6px; padding: 8px 14px; font-size: 14px; cursor: pointer; }
+  .generate { background: #14532d; color: #fff; border: none; border-radius: 8px; padding: 13px 26px; font-size: 16px; font-weight: 600; cursor: pointer; width: 100%; }
+  .generate:hover { background: #0f4023; }
+  #errors { display: none; background: #fdf2f2; border: 1px solid #e6b0aa; color: #922b21; border-radius: 8px; padding: 12px 16px; margin-bottom: 16px; }
+  #errors ul { margin: 4px 0 0; padding-left: 20px; }
+  #output-wrap { display: none; }
+  pre { background: #0b2239; color: #e8f0f8; padding: 16px; border-radius: 8px; overflow-x: auto; font-size: 13px; line-height: 1.5; white-space: pre-wrap; word-break: break-word; }
+  .out-actions { display: flex; gap: 10px; margin: 12px 0; }
+  .out-actions button { flex: 1; padding: 11px; font-size: 15px; font-weight: 600; border-radius: 8px; cursor: pointer; }
+  #download { background: #14532d; color: #fff; border: none; }
+  #copy { background: #fff; border: 1px solid #c3cedb; }
+  .next { background: #eaf4ec; border: 1px solid #b7d9c0; border-radius: 8px; padding: 14px 16px; font-size: 14px; }
+  .note { font-size: 13px; color: #5b6b80; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Build your front desk</h1>
+  <p class="sub">Answer a few questions about your shop. No code, no account. You get a config file, and we turn it into your front desk app — booking, reminders, and a dashboard.</p>
+
+  <div id="errors"><strong>Please fix these:</strong><ul id="error-list"></ul></div>
+
+  <form id="builder" novalidate>
+    <section>
+      <h2>1. Your business</h2>
+      <p class="hint">The name callers hear, and the hours your front desk books.</p>
+      <label for="biz-name">Business name *</label>
+      <input type="text" id="biz-name" placeholder="e.g. FixIt Auto" autocomplete="organization">
+      <div class="row">
+        <div>
+          <label for="biz-type">What kind of shop? *</label>
+          <select id="biz-type">
+            <option value="auto-repair">Auto repair</option>
+            <option value="dental-clinic">Dental clinic</option>
+            <option value="vet-clinic">Vet clinic</option>
+            <option value="salon">Salon</option>
+            <option value="cafe">Cafe</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+        <div>
+          <label for="biz-tz">Timezone *</label>
+          <select id="biz-tz">
+            <option value="America/New_York" selected>Eastern (New York)</option>
+            <option value="America/Chicago">Central (Chicago)</option>
+            <option value="America/Denver">Mountain (Denver)</option>
+            <option value="America/Los_Angeles">Pacific (Los Angeles)</option>
+            <option value="America/Phoenix">Arizona (Phoenix)</option>
+            <option value="America/Anchorage">Alaska (Anchorage)</option>
+            <option value="Pacific/Honolulu">Hawaii (Honolulu)</option>
+          </select>
+        </div>
+      </div>
+      <label for="biz-phone">Phone</label>
+      <input type="text" id="biz-phone" placeholder="e.g. (555) 010-0142" autocomplete="tel">
+      <label for="biz-address">Address</label>
+      <input type="text" id="biz-address" placeholder="e.g. 214 Meridian Ave, San Jose, CA 95126" autocomplete="street-address">
+      <div class="row">
+        <div>
+          <label for="hours-open">Opens *</label>
+          <input type="time" id="hours-open" value="09:00">
+        </div>
+        <div>
+          <label for="hours-close">Closes *</label>
+          <input type="time" id="hours-close" value="17:00">
+        </div>
+      </div>
+      <label>Days open *</label>
+      <div class="days" id="days">
+        <label><input type="checkbox" value="1" checked> Mon</label>
+        <label><input type="checkbox" value="2" checked> Tue</label>
+        <label><input type="checkbox" value="3" checked> Wed</label>
+        <label><input type="checkbox" value="4" checked> Thu</label>
+        <label><input type="checkbox" value="5" checked> Fri</label>
+        <label><input type="checkbox" value="6" checked> Sat</label>
+        <label><input type="checkbox" value="0"> Sun</label>
+      </div>
+    </section>
+
+    <section>
+      <h2>2. Your services</h2>
+      <p class="hint">What customers can book. Prices are the range you quote — leave both blank if you quote after inspection.</p>
+      <div id="services"></div>
+      <button type="button" class="add" id="add-service">+ Add another service</button>
+    </section>
+
+    <section>
+      <h2>3. How customers reach you</h2>
+      <p class="hint">At least one channel. SMS is first by default — missed calls are reported by text.</p>
+      <div class="checks">
+        <label><input type="checkbox" id="ch-sms" checked> SMS</label>
+        <label><input type="checkbox" id="ch-voice" checked> Voice</label>
+      </div>
+      <label for="confirm-hours">Remind customers how many hours before their appointment?</label>
+      <input type="number" id="confirm-hours" value="24" min="1" max="72" style="max-width: 140px;">
+      <div style="margin-top: 14px;">
+        <label style="display: inline-flex; align-items: center; gap: 6px; font-weight: 400;">
+          <input type="checkbox" id="estimate" checked> Show price estimates from the customer's symptom
+        </label>
+        <p class="note" id="estimate-note">Price estimates need a pricing dataset — available for auto repair.</p>
+      </div>
+      <p class="note" id="intake-note"></p>
+    </section>
+
+    <button type="submit" class="generate">Generate my config</button>
+  </form>
+
+  <section id="output-wrap" style="margin-top: 16px;">
+    <h2>Your config file</h2>
+    <p class="hint">This is the whole front desk, in one file. Send it to us and we generate your app — or keep it and run it yourself.</p>
+    <pre id="output"></pre>
+    <div class="out-actions">
+      <button type="button" id="download">Download config.json</button>
+      <button type="button" id="copy">Copy to clipboard</button>
+    </div>
+    <div class="next"><strong>What happens next:</strong> send the downloaded file to us (or run <code>node template/cli.js validate --config your-config.json</code> to check it). We generate your front desk app from it — booking page, reminders, and dashboard — and give you the live link.</div>
+  </section>
+</main>
+
+<script>
+'use strict';
+/* FrontDesk config builder — plain JS, no dependencies.
+ * Builds exactly the config the template validates (template/lib/config.js):
+ * business, channels, estimate, intakeFields, intakeOptional, language,
+ * reminders, services. Service ids are slugified from the service name. */
+
+var INTAKE = {
+  'auto-repair': { fields: ['vehicleYearMakeModel', 'mileage', 'symptomDescription'], optional: ['vehicleYearMakeModel', 'mileage', 'symptomDescription'], label: "We'll ask: vehicle year/make/model, mileage, symptom." },
+  'dental-clinic': { fields: ['fullName', 'dateOfBirth', 'insuranceProvider', 'healthHistory', 'isNewPatient', 'lastVisitDate'], optional: ['lastVisitDate', 'dateOfBirth', 'fullName'], label: "We'll ask: name, date of birth, insurance, health history, new patient?, last visit." },
+  'vet-clinic': { fields: ['petName', 'species', 'breed', 'petAgeYears', 'ownerName', 'reasonForVisit'], optional: ['breed'], label: "We'll ask: pet name, species, breed, age, owner name, reason for visit." },
+  'salon': { fields: ['notes'], optional: ['notes'], label: "We'll ask: any notes for the appointment." },
+  'cafe': { fields: ['notes'], optional: ['notes'], label: "We'll ask: any notes for the appointment." },
+  'other': { fields: ['notes'], optional: ['notes'], label: "We'll ask: any notes for the appointment." }
+};
+var RECALL_DAYS = { 'dental-clinic': 180, 'vet-clinic': 365 };
+
+function slugify(name) {
+  return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+}
+function $(id) { return document.getElementById(id); }
+function serviceRow() {
+  var div = document.createElement('div');
+  div.className = 'service';
+  div.innerHTML =
+    '<h3>Service</h3>' +
+    '<label>Service name *</label><input type="text" class="svc-name" placeholder="e.g. Oil Change">' +
+    '<div class="row"><div><label>Duration (minutes) *</label><input type="number" class="svc-duration" value="60" min="15" step="15"></div>' +
+    '<div><label>Price from ($)</label><input type="number" class="svc-min" min="0" step="1" placeholder="blank = quote later"></div>' +
+    '<div><label>Price to ($)</label><input type="number" class="svc-max" min="0" step="1" placeholder="blank = quote later"></div></div>' +
+    '<label>Description</label><input type="text" class="svc-desc" placeholder="e.g. Full-synthetic oil and filter change.">' +
+    '<button type="button" class="remove">Remove this service</button>';
+  div.querySelector('.remove').addEventListener('click', function () {
+    if (document.querySelectorAll('.service').length > 1) div.remove();
+  });
+  return div;
+}
+function refreshType() {
+  var type = $('biz-type').value;
+  var est = $('estimate');
+  if (type === 'auto-repair') {
+    est.disabled = false;
+    $('estimate-note').textContent = 'Price estimates need a pricing dataset — available for auto repair.';
+  } else {
+    est.checked = false;
+    est.disabled = true;
+    $('estimate-note').textContent = 'Price estimates need a pricing dataset — available for auto repair, so this is off for your shop type.';
+  }
+  $('intake-note').textContent = INTAKE[type].label;
+}
+$('biz-type').addEventListener('change', refreshType);
+$('add-service').addEventListener('click', function () {
+  $('services').appendChild(serviceRow());
+});
+for (var i = 0; i < 3; i++) $('services').appendChild(serviceRow());
+refreshType();
+
+function showErrors(errors) {
+  var box = $('errors');
+  var list = $('error-list');
+  list.innerHTML = '';
+  if (!errors.length) { box.style.display = 'none'; return; }
+  errors.forEach(function (e) { var li = document.createElement('li'); li.textContent = e; list.appendChild(li); });
+  box.style.display = 'block';
+  box.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+$('builder').addEventListener('submit', function (ev) {
+  ev.preventDefault();
+  document.querySelectorAll('.error').forEach(function (el) { el.classList.remove('error'); });
+  var errors = [];
+  function bad(el, msg) { el.classList.add('error'); errors.push(msg); }
+
+  var name = $('biz-name').value.trim();
+  if (!name) bad($('biz-name'), 'Business name is required.');
+  var type = $('biz-type').value;
+  var tz = $('biz-tz').value;
+  var phone = $('biz-phone').value.trim();
+  var address = $('biz-address').value.trim();
+  var open = $('hours-open').value;
+  var close = $('hours-close').value;
+  if (!/^(0[0-9]|1[0-9]|2[0-3]):[0-5][0-9]$/.test(open)) bad($('hours-open'), 'Opening time must be HH:MM.');
+  if (!/^(0[0-9]|1[0-9]|2[0-3]):[0-5][0-9]$/.test(close)) bad($('hours-close'), 'Closing time must be HH:MM.');
+  var days = Array.prototype.slice.call(document.querySelectorAll('#days input:checked')).map(function (c) { return Number(c.value); });
+  if (!days.length) errors.push('Pick at least one day open.');
+
+  var services = [];
+  var usedIds = {};
+  document.querySelectorAll('.service').forEach(function (row, idx) {
+    var sName = row.querySelector('.svc-name').value.trim();
+    var dur = Number(row.querySelector('.svc-duration').value);
+    var minV = row.querySelector('.svc-min').value;
+    var maxV = row.querySelector('.svc-max').value;
+    var desc = row.querySelector('.svc-desc').value.trim();
+    if (!sName && !desc && minV === '' && maxV === '') return; // empty row: skip it
+    if (!sName) { bad(row.querySelector('.svc-name'), 'Service ' + (idx + 1) + ' needs a name.'); return; }
+    if (!Number.isInteger(dur) || dur < 15) { bad(row.querySelector('.svc-duration'), 'Service "' + sName + '" duration must be at least 15 minutes.'); return; }
+    var min = minV === '' ? null : Number(minV);
+    var max = maxV === '' ? null : Number(maxV);
+    if ((min === null) !== (max === null)) { bad(row.querySelector('.svc-min'), 'Service "' + sName + '": fill both prices, or leave both blank.'); return; }
+    if (min !== null && (min < 0 || max < min)) { bad(row.querySelector('.svc-min'), 'Service "' + sName + '": prices must be 0 or more, and "to" must be at least "from".'); return; }
+    var id = slugify(sName) || ('service-' + (idx + 1));
+    if (usedIds[id]) { var n = 2; while (usedIds[id + '-' + n]) n++; id = id + '-' + n; }
+    usedIds[id] = true;
+    services.push({ description: desc, durationMin: dur, id: id, name: sName, priceEstimate: min === null ? null : { max: max, min: min } });
+  });
+  if (!services.length) errors.push('Add at least one service.');
+
+  var channels = [];
+  if ($('ch-sms').checked) channels.push('sms');
+  if ($('ch-voice').checked) channels.push('voice');
+  if (!channels.length) errors.push('Pick at least one channel (SMS or Voice).');
+  var confirmHours = Number($('confirm-hours').value);
+  if (!Number.isInteger(confirmHours) || confirmHours < 1) { bad($('confirm-hours'), 'Reminder hours must be at least 1.'); }
+
+  showErrors(errors);
+  if (errors.length) { $('output-wrap').style.display = 'none'; return; }
+
+  var intake = INTAKE[type];
+  var estimateEnabled = type === 'auto-repair' && $('estimate').checked;
+  var config = {
+    business: {
+      address: address,
+      hours: { close: close, days: days.sort(), open: open },
+      name: name,
+      phone: phone,
+      timezone: tz,
+      type: type
+    },
+    channels: channels,
+    estimate: estimateEnabled
+      ? { dataset: 'datasets/auto-repair-estimates.sample.json', enabled: true, rule: 'service + symptom -> price range + time range' }
+      : { enabled: false },
+    intakeFields: intake.fields,
+    intakeOptional: intake.optional,
+    language: 'en',
+    reminders: { confirmHoursBefore: confirmHours, recallDays: RECALL_DAYS[type] || null },
+    services: services
+  };
+  var json = JSON.stringify(config, null, 2);
+  $('output').textContent = json;
+  $('output-wrap').style.display = 'block';
+  $('output-wrap').scrollIntoView({ behavior: 'smooth' });
+  $('download').onclick = function () {
+    var blob = new Blob([json], { type: 'application/json' });
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = slugify(name) + '.json';
+    a.click();
+    URL.revokeObjectURL(a.href);
+  };
+  $('copy').onclick = function () {
+    navigator.clipboard.writeText(json).then(function () { $('copy').textContent = 'Copied!'; setTimeout(function () { $('copy').textContent = 'Copy to clipboard'; }, 2000); });
+  };
+});
+</script>
+</body>
+</html>
