@@ -205,18 +205,37 @@ function parseArgs(argv) {
   return opts;
 }
 
+/**
+ * Pick the store for a server run. Returns a ready PgStore when DATABASE_URL
+ * is set and Postgres answers, otherwise null (the caller then builds the
+ * JSON-file store). A database that is down, deleted, or misconfigured must
+ * never take the app down with it: the app falls back to the JSON store and
+ * keeps serving, with a loud log line saying bookings will not survive
+ * restarts until the database is back. That is the safety net for the free
+ * Render Postgres, which expires 90 days after creation.
+ */
+async function resolveStore(config, opts = {}) {
+  if (opts.store) return opts.store;
+  if (!process.env.DATABASE_URL) return null;
+  try {
+    const { PgStore } = require('./lib/store-pg');
+    const pgStore = new PgStore({ connectionString: process.env.DATABASE_URL, slug: slug(config.business.name) });
+    await pgStore.init();
+    return pgStore;
+  } catch (err) {
+    console.error(`Postgres unavailable (${err.message}); falling back to the JSON-file store. Bookings will not survive restarts until the database is back.`);
+    return null;
+  }
+}
+
 async function start(config, opts = {}) {
   const port = opts.port || Number(process.env.PORT) || 3000;
   // Postgres backend: when DATABASE_URL is set, build and init the PgStore
   // first (it loads existing rows into memory), then hand it to
-  // createServer. Without it the JSON-file store is the default and this
-  // function behaves exactly as before.
-  if (!opts.store && process.env.DATABASE_URL) {
-    const { PgStore } = require('./lib/store-pg');
-    const pgStore = new PgStore({ connectionString: process.env.DATABASE_URL, slug: slug(config.business.name) });
-    await pgStore.init();
-    opts = { ...opts, store: pgStore };
-  }
+  // createServer. Without it — or when Postgres is down — the JSON-file
+  // store is the default and this function behaves exactly as before.
+  const resolved = await resolveStore(config, opts);
+  if (resolved) opts = { ...opts, store: resolved };
   const { server, store } = createServer(config, opts);
   server.listen(port, () => {
     console.log(`FrontDesk: ${config.business.name} (${config.business.type})`);
@@ -238,4 +257,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { createServer, start, loadConfig };
+module.exports = { createServer, start, loadConfig, resolveStore };

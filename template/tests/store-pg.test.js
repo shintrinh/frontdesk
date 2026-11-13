@@ -164,6 +164,31 @@ test('rows survive a restart: a second store on the same pool loads them back', 
   assert.equal(second.listBookings(date).length, 1);
 });
 
+test('resolveStore returns null when DATABASE_URL is unset', async () => {
+  const { resolveStore } = require('../server');
+  const prev = process.env.DATABASE_URL;
+  delete process.env.DATABASE_URL;
+  try {
+    assert.equal(await resolveStore({ business: { name: 'FixIt Auto' } }, {}), null);
+  } finally {
+    if (prev !== undefined) process.env.DATABASE_URL = prev;
+  }
+});
+
+test('resolveStore falls back to null when Postgres is unreachable (free DB expiry safety net)', async () => {
+  const { resolveStore } = require('../server');
+  const prev = process.env.DATABASE_URL;
+  process.env.DATABASE_URL = 'postgres://invalid-host:5432/fake';
+  try {
+    // No pg package installed locally and the host does not exist: either
+    // way the init fails inside the try, and the app must fall back to the
+    // JSON store instead of crashing on startup.
+    assert.equal(await resolveStore({ business: { name: 'FixIt Auto' } }, {}), null);
+  } finally {
+    if (prev === undefined) delete process.env.DATABASE_URL; else process.env.DATABASE_URL = prev;
+  }
+});
+
 test('createServer accepts an injected PgStore: booking via HTTP hits Postgres', async () => {
   const pool = new FakePool();
   const store = new PgStore({ connectionString: 'postgres://fake/fake', slug: 'fixit-auto', Pool: FakePool });
