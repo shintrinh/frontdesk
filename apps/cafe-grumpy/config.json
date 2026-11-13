@@ -1,0 +1,67 @@
+{
+  "business": {
+    "address": "200 W 39th St, New York, NY 10018",
+    "hours": {
+      "close": "18:00",
+      "days": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "open": "07:00"
+    },
+    "name": "Cafe Grumpy",
+    "phone": "(646) 449-8747",
+    "timezone": "America/New_York",
+    "type": "cafe"
+  },
+  "channels": [
+    "sms",
+    "voice"
+  ],
+  "estimate": {
+    "enabled": false
+  },
+  "intakeFields": [
+    "notes"
+  ],
+  "intakeOptional": [
+    "notes"
+  ],
+  "language": "en",
+  "reminders": {
+    "confirmHoursBefore": 24,
+    "recallDays": null
+  },
+  "services": [
+    {
+      "description": "Learn espresso extraction and milk texturing basics with our baristas.",
+      "durationMin": 60,
+      "id": "home-barista-espresso-class",
+      "name": "Home Barista Espresso Class",
+      "priceEstimate": {
+        "max": 65,
+        "min": 45
+      }
+    },
+    {
+      "description": "Guided tasting of our signature Heartbreaker espresso and seasonal blends.",
+      "durationMin": 45,
+      "id": "signature-blend-cupping",
+      "name": "Signature Blend Cupping",
+      "priceEstimate": {
+        "max": 30,
+        "min": 20
+      }
+    },
+    {
+      "description": "Reserved seating for coffee meetings in the Fashion District cafe.",
+      "durationMin": 60,
+      "id": "coffee-meeting-table",
+      "name": "Coffee Meeting Table",
+      "priceEstimate": null
+    }
+  ]
+}

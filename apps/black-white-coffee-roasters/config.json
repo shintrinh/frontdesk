@@ -1,0 +1,68 @@
+{
+  "business": {
+    "address": "314 Brooks St, Wake Forest, NC 27587",
+    "hours": {
+      "close": "18:00",
+      "days": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "open": "07:00"
+    },
+    "name": "Black & White Coffee Roasters",
+    "phone": "(984) 235-4027",
+    "timezone": "America/New_York",
+    "type": "cafe"
+  },
+  "channels": [
+    "sms",
+    "voice"
+  ],
+  "estimate": {
+    "enabled": false
+  },
+  "intakeFields": [
+    "notes"
+  ],
+  "intakeOptional": [
+    "notes"
+  ],
+  "language": "en",
+  "reminders": {
+    "confirmHoursBefore": 24,
+    "recallDays": null
+  },
+  "services": [
+    {
+      "description": "Guided tasting of three seasonal single-origin and anaerobic processed coffees.",
+      "durationMin": 45,
+      "id": "pour-over-tasting-flight",
+      "name": "Pour-Over Tasting Flight",
+      "priceEstimate": {
+        "max": 28,
+        "min": 18
+      }
+    },
+    {
+      "description": "Interactive cupping and sensory evaluation with our lead roaster.",
+      "durationMin": 60,
+      "id": "private-coffee-cupping-session",
+      "name": "Private Coffee Cupping Session",
+      "priceEstimate": {
+        "max": 50,
+        "min": 35
+      }
+    },
+    {
+      "description": "Reserved indoor seating for coffee and pastries.",
+      "durationMin": 90,
+      "id": "table-reservation-group-of-2-4",
+      "name": "Table Reservation (Group of 2-4)",
+      "priceEstimate": null
+    }
+  ]
+}

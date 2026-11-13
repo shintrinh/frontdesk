@@ -1,0 +1,66 @@
+{
+  "business": {
+    "address": "1905 S 1st St, Austin, TX 78704",
+    "hours": {
+      "close": "15:00",
+      "days": [
+        2,
+        3,
+        4,
+        5
+      ],
+      "open": "08:00"
+    },
+    "name": "Sightseer Coffee Bar",
+    "phone": "(833) 477-8990",
+    "timezone": "America/Chicago",
+    "type": "cafe"
+  },
+  "channels": [
+    "sms",
+    "voice"
+  ],
+  "estimate": {
+    "enabled": false
+  },
+  "intakeFields": [
+    "notes"
+  ],
+  "intakeOptional": [
+    "notes"
+  ],
+  "language": "en",
+  "reminders": {
+    "confirmHoursBefore": 24,
+    "recallDays": null
+  },
+  "services": [
+    {
+      "description": "Guided tasting of three seasonal natural-processed single-origin coffees.",
+      "durationMin": 45,
+      "id": "natural-coffee-tasting-flight",
+      "name": "Natural Coffee Tasting Flight",
+      "priceEstimate": {
+        "max": 25,
+        "min": 16
+      }
+    },
+    {
+      "description": "Hands-on pour-over brewing workshop with V60 and Kalita Wave.",
+      "durationMin": 60,
+      "id": "pour-over-brewing-workshop",
+      "name": "Pour-Over Brewing Workshop",
+      "priceEstimate": {
+        "max": 45,
+        "min": 30
+      }
+    },
+    {
+      "description": "Reserved patio or indoor table for small groups.",
+      "durationMin": 90,
+      "id": "patio-table-reservation",
+      "name": "Patio Table Reservation",
+      "priceEstimate": null
+    }
+  ]
+}
