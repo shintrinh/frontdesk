@@ -105,9 +105,10 @@
 
     <section>
       <h2>2. Your services</h2>
-      <p class="hint">What customers can book. Prices are the range you quote — leave both blank if you quote after inspection.</p>
+      <p class="hint">What customers can book. We filled in the usual services for your shop type — keep, edit, or remove them. Prices are the range you quote — leave both blank if you quote after inspection. Changing the shop type above resets this list to that type's usual services.</p>
       <div id="services"></div>
       <button type="button" class="add" id="add-service">+ Add another service</button>
+      <button type="button" class="add" id="reset-services">Reset to usual services</button>
     </section>
 
     <section>
@@ -159,32 +160,77 @@ var INTAKE = {
   'other': { fields: ['notes'], optional: ['notes'], label: "We'll ask: any notes for the appointment." }
 };
 var RECALL_DAYS = { 'dental-clinic': 180, 'vet-clinic': 365 };
+/* Usual services per shop type, pre-filled as real values (not placeholders)
+ * so an owner on a phone just keeps, edits, or removes them instead of
+ * typing everything. Prices are typical ranges; the owner adjusts them. */
+var PRESETS = {
+  'auto-repair': [
+    { name: 'Oil Change', durationMin: 45, min: 55, max: 85, desc: 'Full-synthetic oil and filter change.' },
+    { name: 'Brake Service', durationMin: 90, min: 180, max: 350, desc: 'Brake pad and rotor inspection and replacement.' },
+    { name: 'Engine Diagnostics', durationMin: 60, min: 95, max: 140, desc: 'Computer engine diagnostics and electrical system check.' }
+  ],
+  'dental-clinic': [
+    { name: 'New Patient Exam', durationMin: 90, min: null, max: null, desc: 'Comprehensive oral evaluation for new patients.' },
+    { name: 'Cleaning & Checkup', durationMin: 60, min: null, max: null, desc: 'Adult cleaning and periodic oral evaluation.' },
+    { name: 'Bitewing X-Rays', durationMin: 30, min: null, max: null, desc: 'Four bitewing X-ray images.' }
+  ],
+  'vet-clinic': [
+    { name: 'Wellness Exam', durationMin: 60, min: null, max: null, desc: 'Annual wellness exam and vaccinations review.' },
+    { name: 'Vaccinations', durationMin: 30, min: null, max: null, desc: 'Core vaccinations (rabies, distemper/parvo).' },
+    { name: 'Sick Visit', durationMin: 45, min: null, max: null, desc: 'Same-day visit for a sick or injured pet.' }
+  ],
+  'salon': [
+    { name: 'Haircut', durationMin: 60, min: 40, max: 70, desc: 'Haircut and style.' },
+    { name: 'Color', durationMin: 120, min: null, max: null, desc: 'Full color service.' },
+    { name: 'Blowout', durationMin: 45, min: 30, max: 50, desc: 'Wash and blowout.' }
+  ],
+  'cafe': [
+    { name: 'Pour-Over Tasting', durationMin: 45, min: 18, max: 28, desc: 'Guided tasting of seasonal single-origin coffees.' },
+    { name: 'Coffee Cupping', durationMin: 45, min: 20, max: 30, desc: 'Guided tasting of our signature blends.' },
+    { name: 'Table Reservation', durationMin: 90, min: null, max: null, desc: 'Reserved seating for coffee and pastries.' }
+  ],
+  'other': [
+    { name: 'Appointment', durationMin: 60, min: null, max: null, desc: '' }
+  ]
+};
 
 function slugify(name) {
   return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 }
 function $(id) { return document.getElementById(id); }
-function serviceRow() {
+function serviceRow(preset) {
   var div = document.createElement('div');
   div.className = 'service';
+  var p = preset || {};
+  var nameVal = p.name || '';
+  var durVal = p.durationMin || 60;
+  var minVal = (p.min === null || p.min === undefined) ? '' : p.min;
+  var maxVal = (p.max === null || p.max === undefined) ? '' : p.max;
+  var descVal = p.desc || '';
   div.innerHTML =
     '<h3>Service</h3>' +
-    '<label>Service name *</label><input type="text" class="svc-name" placeholder="e.g. Oil Change">' +
-    '<div class="row"><div><label>Duration (minutes) *</label><input type="number" class="svc-duration" value="60" min="15" step="15"></div>' +
-    '<div><label>Price from ($)</label><input type="number" class="svc-min" min="0" step="1" placeholder="blank = quote later"></div>' +
-    '<div><label>Price to ($)</label><input type="number" class="svc-max" min="0" step="1" placeholder="blank = quote later"></div></div>' +
-    '<label>Description</label><input type="text" class="svc-desc" placeholder="e.g. Full-synthetic oil and filter change.">' +
+    '<label>Service name *</label><input type="text" class="svc-name" placeholder="e.g. Oil Change" value="' + nameVal.replace(/"/g, '&quot;') + '">' +
+    '<div class="row"><div><label>Duration (minutes) *</label><input type="number" class="svc-duration" value="' + durVal + '" min="15" step="15"></div>' +
+    '<div><label>Price from ($)</label><input type="number" class="svc-min" min="0" step="1" placeholder="blank = quote later" value="' + minVal + '"></div>' +
+    '<div><label>Price to ($)</label><input type="number" class="svc-max" min="0" step="1" placeholder="blank = quote later" value="' + maxVal + '"></div></div>' +
+    '<label>Description</label><input type="text" class="svc-desc" placeholder="e.g. Full-synthetic oil and filter change." value="' + descVal.replace(/"/g, '&quot;') + '">' +
     '<button type="button" class="remove">Remove this service</button>';
   div.querySelector('.remove').addEventListener('click', function () {
     if (document.querySelectorAll('.service').length > 1) div.remove();
   });
   return div;
 }
+function fillServices(type) {
+  var wrap = $('services');
+  wrap.innerHTML = '';
+  PRESETS[type].forEach(function (preset) { wrap.appendChild(serviceRow(preset)); });
+}
 function refreshType() {
   var type = $('biz-type').value;
   var est = $('estimate');
   if (type === 'auto-repair') {
     est.disabled = false;
+    est.checked = true;
     $('estimate-note').textContent = 'Price estimates need a pricing dataset — available for auto repair.';
   } else {
     est.checked = false;
@@ -192,12 +238,15 @@ function refreshType() {
     $('estimate-note').textContent = 'Price estimates need a pricing dataset — available for auto repair, so this is off for your shop type.';
   }
   $('intake-note').textContent = INTAKE[type].label;
+  fillServices(type);
 }
 $('biz-type').addEventListener('change', refreshType);
 $('add-service').addEventListener('click', function () {
   $('services').appendChild(serviceRow());
 });
-for (var i = 0; i < 3; i++) $('services').appendChild(serviceRow());
+$('reset-services').addEventListener('click', function () {
+  fillServices($('biz-type').value);
+});
 refreshType();
 
 function showErrors(errors) {
