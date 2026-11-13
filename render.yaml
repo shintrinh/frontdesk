@@ -1,5 +1,4 @@
-# Render Blueprint — deploys both FrontDesk apps as free Web Services,
-# plus one free Postgres shared by both apps (bookings survive restarts).
+# Render Blueprint — deploys both FrontDesk apps as free Web Services.
 # Deploy: Render Dashboard → New → Blueprint → connect shintrinh/frontdesk
 # → Apply. See docs/DEPLOY.md for the exact steps.
 # Each service runs the generated app's thin server (see template/server.js).
@@ -8,11 +7,10 @@
 # on the require path from template/lib/store-pg.js. The apps require the
 # template core at runtime (../../template/server), so the full repo is
 # present on each service.
-databases:
-  - name: frontdesk-db
-    plan: free
-    region: oregon
-
+# DATABASE_URL is NOT declared here: it points at the Neon free Postgres
+# (no expiry) and is set manually in the dashboard on each service, so the
+# connection string (a secret) never lands in this public repo. The old
+# Render free database was removed: it expired 30 days after creation.
 services:
   - type: web
     name: frontdesk-fixit-auto
@@ -25,10 +23,6 @@ services:
     envVars:
       - key: NODE_VERSION
         value: "20"
-      - key: DATABASE_URL
-        fromDatabase:
-          name: frontdesk-db
-          property: connectionString
     healthCheckPath: /api/health
 
   - type: web
@@ -42,8 +36,4 @@ services:
     envVars:
       - key: NODE_VERSION
         value: "20"
-      - key: DATABASE_URL
-        fromDatabase:
-          name: frontdesk-db
-          property: connectionString
     healthCheckPath: /api/health
