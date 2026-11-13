@@ -1,8 +1,18 @@
-# Render Blueprint — deploys both FrontDesk apps as free Web Services.
+# Render Blueprint — deploys both FrontDesk apps as free Web Services,
+# plus one free Postgres shared by both apps (bookings survive restarts).
 # Deploy: Render Dashboard → New → Blueprint → connect shintrinh/frontdesk
 # → Apply. See docs/DEPLOY.md for the exact steps.
-# Each service runs the generated app's thin server (zero dependencies,
-# no build step). Render sets PORT automatically; the server reads it.
+# Each service runs the generated app's thin server (see template/server.js).
+# Render sets PORT automatically; the server reads it. The build installs
+# the template's one dependency (pg) into template/node_modules, which is
+# on the require path from template/lib/store-pg.js. The apps require the
+# template core at runtime (../../template/server), so the full repo is
+# present on each service.
+databases:
+  - name: frontdesk-db
+    plan: free
+    region: oregon
+
 services:
   - type: web
     name: frontdesk-fixit-auto
@@ -10,11 +20,15 @@ services:
     plan: free
     region: oregon
     rootDir: apps/fixit-auto
-    buildCommand: echo "zero dependencies — nothing to build"
+    buildCommand: npm install --prefix ../../template
     startCommand: node server.js
     envVars:
       - key: NODE_VERSION
         value: "20"
+      - key: DATABASE_URL
+        fromDatabase:
+          name: frontdesk-db
+          property: connectionString
     healthCheckPath: /api/health
 
   - type: web
@@ -23,9 +37,13 @@ services:
     plan: free
     region: oregon
     rootDir: apps/brightsmile-dental
-    buildCommand: echo "zero dependencies — nothing to build"
+    buildCommand: npm install --prefix ../../template
     startCommand: node server.js
     envVars:
       - key: NODE_VERSION
         value: "20"
+      - key: DATABASE_URL
+        fromDatabase:
+          name: frontdesk-db
+          property: connectionString
     healthCheckPath: /api/health

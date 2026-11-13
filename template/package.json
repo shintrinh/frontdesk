@@ -1,5 +1,5 @@
 {
-  "description": "FrontDesk — config-driven AI front desk template (Kiroween 2026, Skeleton Crew). Zero dependencies, no build step.",
+  "description": "FrontDesk — config-driven AI front desk template (Kiroween 2026, Skeleton Crew). No build step; JSON-file store by default, optional Postgres backend via the 'pg' package when DATABASE_URL is set.",
   "engines": {
     "node": ">=20"
   },
@@ -7,6 +7,9 @@
   "main": "server.js",
   "name": "frontdesk-template",
   "private": true,
+  "dependencies": {
+    "pg": "^8.13.0"
+  },
   "scripts": {
     "cli": "node cli.js",
     "generate": "node generate.js",

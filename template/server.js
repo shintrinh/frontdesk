@@ -1,8 +1,11 @@
 'use strict';
 /**
- * FrontDesk template server — zero dependencies, no build step.
+ * FrontDesk template server — no build step, one optional dependency.
  * One config file fully describes the business; this server turns it into a
  * working front desk: booking, intake, estimates, reminders, dashboard.
+ * Storage defaults to a JSON-file snapshot (zero dependencies). Set
+ * DATABASE_URL to use Postgres instead (lib/store-pg.js, 'pg' package);
+ * bookings then survive restarts on ephemeral hosts.
  *
  *   node template/server.js --config config/fixit-auto.json --port 3000
  *
@@ -51,7 +54,9 @@ function createServer(config, opts = {}) {
   // Generated apps serve their own per-vertical dashboard from their own
   // public/ folder; the template dashboard is the fallback.
   const publicDir = opts.publicDir || PUBLIC_DIR;
-  const store = new Store(dataDir, slug(config.business.name));
+  // A caller (start() with DATABASE_URL) may inject a ready store, e.g. a
+  // PgStore; otherwise the JSON-file store is the default.
+  const store = opts.store || new Store(dataDir, slug(config.business.name));
   let dataset = null;
   if (config.estimate && config.estimate.enabled && config.estimate.dataset) {
     // The dataset path is relative to the repo root. Resolve it from the
@@ -133,7 +138,7 @@ function createServer(config, opts = {}) {
         if (!slotIsFree(config, date, serviceId, startTime, store.bookings)) {
           return sendJson(res, 409, { error: 'SLOT_TAKEN', message: `No availability for ${serviceId} on ${date} at ${startTime}` });
         }
-        const booking = store.addBooking({ serviceId, date, startTime, customerName, phone, intake: intakeWithDefaults, channel: channel || 'sms', status });
+        const booking = await store.addBooking({ serviceId, date, startTime, customerName, phone, intake: intakeWithDefaults, channel: channel || 'sms', status });
         return sendJson(res, 201, { booking });
       }
       if (req.method === 'GET' && url.pathname === '/api/bookings') {
@@ -145,7 +150,7 @@ function createServer(config, opts = {}) {
         return sendJson(res, 200, { booking });
       }
       if (req.method === 'POST' && parts[0] === 'api' && parts[1] === 'bookings' && parts[2] && parts[3] === 'cancel') {
-        const booking = store.cancelBooking(parts[2]);
+        const booking = await store.cancelBooking(parts[2]);
         if (!booking) return sendJson(res, 404, { error: 'NOT_FOUND' });
         return sendJson(res, 200, { booking });
       }
@@ -166,8 +171,8 @@ function createServer(config, opts = {}) {
         const booking = store.getBooking(body.bookingId);
         if (!booking) return sendJson(res, 404, { error: 'NOT_FOUND' });
         const text = confirmationMessage(config, booking);
-        const sent = store.sendMessage({ to: booking.phone, channel: body.channel || 'sms', kind: 'confirmation', body: text, bookingId: booking.id });
-        store.markReminderSent(booking.id);
+        const sent = await store.sendMessage({ to: booking.phone, channel: body.channel || 'sms', kind: 'confirmation', body: text, bookingId: booking.id });
+        await store.markReminderSent(booking.id);
         return sendJson(res, 200, { sent });
       }
       if (req.method === 'POST' && url.pathname === '/api/recalls/send') {
@@ -175,7 +180,7 @@ function createServer(config, opts = {}) {
         const recall = (recallsDue(config, store.bookings) || []).find((r) => r.phone === body.phone);
         if (!recall) return sendJson(res, 404, { error: 'NOT_FOUND', message: 'No recall due for that phone number' });
         const text = recallMessage(config, recall);
-        const sent = store.sendMessage({ to: recall.phone, channel: body.channel || 'sms', kind: 'recall', body: text });
+        const sent = await store.sendMessage({ to: recall.phone, channel: body.channel || 'sms', kind: 'recall', body: text });
         return sendJson(res, 200, { sent });
       }
       if (req.method === 'GET' && url.pathname === '/api/outbox') {
@@ -200,15 +205,25 @@ function parseArgs(argv) {
   return opts;
 }
 
-function start(config, opts = {}) {
+async function start(config, opts = {}) {
   const port = opts.port || Number(process.env.PORT) || 3000;
+  // Postgres backend: when DATABASE_URL is set, build and init the PgStore
+  // first (it loads existing rows into memory), then hand it to
+  // createServer. Without it the JSON-file store is the default and this
+  // function behaves exactly as before.
+  if (!opts.store && process.env.DATABASE_URL) {
+    const { PgStore } = require('./lib/store-pg');
+    const pgStore = new PgStore({ connectionString: process.env.DATABASE_URL, slug: slug(config.business.name) });
+    await pgStore.init();
+    opts = { ...opts, store: pgStore };
+  }
   const { server, store } = createServer(config, opts);
   server.listen(port, () => {
     console.log(`FrontDesk: ${config.business.name} (${config.business.type})`);
     console.log(`Dashboard: http://localhost:${port}/`);
     console.log(`Health:    http://localhost:${port}/api/health`);
     console.log(`Config:    ${config._path || 'generated'}`);
-    console.log(`Data:      ${store.file}`);
+    console.log(`Data:      ${store.file || store.location}`);
   });
   return server;
 }
@@ -217,7 +232,10 @@ if (require.main === module) {
   const args = parseArgs(process.argv.slice(2));
   const configPath = args.config || process.env.FRONTDESK_CONFIG || path.join(__dirname, '..', 'config', 'fixit-auto.json');
   const config = loadConfig(configPath);
-  start(config, args);
+  start(config, args).catch((err) => {
+    console.error('FrontDesk failed to start:', err.message);
+    process.exit(1);
+  });
 }
 
 module.exports = { createServer, start, loadConfig };
