@@ -1,0 +1,76 @@
+{
+  "business": {
+    "address": "2609 8th Ave S, Nashville, TN 37204",
+    "hours": {
+      "close": "18:00",
+      "days": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "open": "08:00"
+    },
+    "name": "Nashville Auto Repair",
+    "phone": "(615) 840-7476",
+    "timezone": "America/Chicago",
+    "type": "auto-repair"
+  },
+  "channels": [
+    "sms",
+    "voice"
+  ],
+  "estimate": {
+    "dataset": "datasets/auto-repair-estimates.sample.json",
+    "enabled": true,
+    "rule": "service + symptom -> price range + time range"
+  },
+  "intakeFields": [
+    "vehicleYearMakeModel",
+    "mileage",
+    "symptomDescription"
+  ],
+  "intakeOptional": [
+    "vehicleYearMakeModel",
+    "mileage",
+    "symptomDescription"
+  ],
+  "language": "en",
+  "reminders": {
+    "confirmHoursBefore": 24,
+    "recallDays": null
+  },
+  "services": [
+    {
+      "description": "Full-synthetic oil and filter change with multi-point safety check.",
+      "durationMin": 45,
+      "id": "oil-change",
+      "name": "Oil Change",
+      "priceEstimate": {
+        "max": 85,
+        "min": 55
+      }
+    },
+    {
+      "description": "Brake pad, rotor, and hydraulic system inspection and replacement.",
+      "durationMin": 90,
+      "id": "brake-service",
+      "name": "Brake Service",
+      "priceEstimate": {
+        "max": 350,
+        "min": 180
+      }
+    },
+    {
+      "description": "Computer engine diagnostics and electrical system check.",
+      "durationMin": 60,
+      "id": "engine-diagnostics",
+      "name": "Engine Diagnostics",
+      "priceEstimate": {
+        "max": 140,
+        "min": 95
+      }
+    }
+  ]
+}
