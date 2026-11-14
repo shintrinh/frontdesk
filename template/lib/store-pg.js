@@ -56,7 +56,7 @@ class PgStore {
     );
     this.outbox = sent.rows.map((r) => r.data);
     const kits = await this.pool.query(
-      `SELECT data FROM ${KIT_CONFIGS_TABLE} WHERE slug = $1 ORDER BY data->>'receivedAt' DESC`,
+      `SELECT data FROM ${KIT_CONFIGS_TABLE} WHERE slug = $1 ORDER BY data->>'receivedAt' ASC`,
       [this.slug],
     );
     this.kitConfigs = kits.rows.map((r) => r.data);
@@ -131,12 +131,18 @@ class PgStore {
       `INSERT INTO ${KIT_CONFIGS_TABLE} (slug, id, data) VALUES ($1, $2, $3)`,
       [this.slug, entry.id, JSON.stringify(entry)],
     );
-    this.kitConfigs.unshift(entry);
+    this.kitConfigs.push(entry);
     return entry;
   }
 
   listKitConfigs() {
-    return this.kitConfigs.slice().sort((a, b) => b.receivedAt.localeCompare(a.receivedAt));
+    // Newest first. receivedAt is an ISO timestamp, so two configs sent
+    // in the same millisecond tie — break the tie by insertion order
+    // (later entries first) so the order is deterministic.
+    return this.kitConfigs
+      .map((entry, i) => ({ entry, i }))
+      .sort((a, b) => b.entry.receivedAt.localeCompare(a.entry.receivedAt) || b.i - a.i)
+      .map(({ entry }) => entry);
   }
 
   async close() {

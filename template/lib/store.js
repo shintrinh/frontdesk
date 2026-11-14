@@ -109,7 +109,13 @@ class Store {
   }
 
   listKitConfigs() {
-    return this.kitConfigs.slice().sort((a, b) => b.receivedAt.localeCompare(a.receivedAt));
+    // Newest first. receivedAt is an ISO timestamp, so two configs sent
+    // in the same millisecond tie — break the tie by insertion order
+    // (later entries first) so the order is deterministic.
+    return this.kitConfigs
+      .map((entry, i) => ({ entry, i }))
+      .sort((a, b) => b.entry.receivedAt.localeCompare(a.entry.receivedAt) || b.i - a.i)
+      .map(({ entry }) => entry);
   }
 }
 

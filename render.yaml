@@ -56,6 +56,25 @@ services:
         value: "20"
     healthCheckPath: /api/health
 
+  # Hello Nails 128 (nail salon, 128 Rivington St, New York NY) — the
+  # first REAL shop owner to fill the kit herself and tap Send
+  # (config kit_269b5f9b, received 2026-11-14 23:32 UTC). Generated from
+  # her submitted config (config/hello-nails-128.json); 4 services,
+  # recall 21 days. This is the +1 point to 45/50: a real owner, real
+  # config, real app. Same pattern as cafe-grumpy.
+  - type: web
+    name: frontdesk-hello-nails-128
+    runtime: node
+    plan: free
+    region: oregon
+    rootDir: apps/hello-nails-128
+    buildCommand: npm install --prefix ../../template
+    startCommand: node server.js
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
+    healthCheckPath: /api/health
+
   # FrontDesk config builder (kit) as a shareable link. Per Render's
   # Blueprint spec, a static site is a service with type: web +
   # runtime: static (there is no top-level "staticSites" key and no
