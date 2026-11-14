@@ -56,18 +56,19 @@ services:
         value: "20"
     healthCheckPath: /api/health
 
-# Static sites are a separate top-level key in the Blueprint schema —
-# they do NOT go under "services:" (that fails validation with
-# unknown type "static"). This is the FrontDesk config builder (kit)
-# as a shareable link. Single self-contained page
-# (template/config-builder.html); the build copies it to kit/index.html
-# so the template file stays the one source of truth. No env vars, no
-# backend — free static hosting, no cold start. This is the reusable
-# client-facing asset: FenBig sends this link to a shop owner, they fill
-# it in on their phone, and the config it produces validates against
-# template/lib/config.js (incl. the nail-salon type).
-staticSites:
-  - name: frontdesk-kit
-    region: oregon
+  # FrontDesk config builder (kit) as a shareable link. Per Render's
+  # Blueprint spec, a static site is a service with type: web +
+  # runtime: static (there is no top-level "staticSites" key and no
+  # "type: static"; region is unsupported — static sites run on a
+  # global CDN). Single self-contained page
+  # (template/config-builder.html); the build copies it to kit/index.html
+  # so the template file stays the one source of truth. No env vars, no
+  # backend — free static hosting, no cold start. This is the reusable
+  # client-facing asset: FenBig sends this link to a shop owner, they fill
+  # it in on their phone, and the config it produces validates against
+  # template/lib/config.js (incl. the nail-salon type).
+  - type: web
+    runtime: static
+    name: frontdesk-kit
     buildCommand: mkdir -p kit && cp template/config-builder.html kit/index.html
     staticPublishPath: kit
