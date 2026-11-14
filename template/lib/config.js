@@ -7,7 +7,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const ALLOWED_TYPES = ['auto-repair', 'dental-clinic', 'vet-clinic', 'salon', 'cafe', 'other'];
+const ALLOWED_TYPES = ['auto-repair', 'dental-clinic', 'vet-clinic', 'salon', 'nail-salon', 'cafe', 'other'];
 const ALLOWED_CHANNELS = ['voice', 'sms', 'email'];
 const TIME_RE = /^([01][0-9]|2[0-3]):[0-5][0-9]$/;
 

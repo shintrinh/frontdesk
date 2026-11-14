@@ -55,3 +55,16 @@ services:
       - key: NODE_VERSION
         value: "20"
     healthCheckPath: /api/health
+
+  # Static site: the FrontDesk config builder (kit) as a shareable link.
+  # Single self-contained page (template/config-builder.html); the build
+  # copies it to kit/index.html so the template file stays the one source
+  # of truth. No env vars, no backend — free static hosting, no cold start.
+  # This is the reusable client-facing asset: FenBig sends this link to a
+  # shop owner, they fill it in on their phone, and the config it produces
+  # validates against template/lib/config.js (incl. the nail-salon type).
+  - type: static
+    name: frontdesk-kit
+    region: oregon
+    buildCommand: mkdir -p kit && cp template/config-builder.html kit/index.html
+    staticPublishPath: kit

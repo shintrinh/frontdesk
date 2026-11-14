@@ -100,7 +100,13 @@ function confirmationMessage(config, booking) {
 }
 
 function recallMessage(config, recall) {
-  return `Hi ${recall.customerName}, this is ${config.business.name}. It has been ${recall.daysSince} days since your last visit — time for your checkup. Reply to book or call ${config.business.phone}.`;
+  const type = config.business.type;
+  const nudge =
+    type === 'dental-clinic' ? 'time for your checkup'
+    : type === 'vet-clinic' ? "time for your pet's checkup"
+    : type === 'nail-salon' ? 'time for your next appointment'
+    : 'time for your next visit';
+  return `Hi ${recall.customerName}, this is ${config.business.name}. It has been ${recall.daysSince} days since your last visit — ${nudge}. Reply to book or call ${config.business.phone}.`;
 }
 
 module.exports = { confirmationsDue, recallsDue, confirmationMessage, recallMessage };
