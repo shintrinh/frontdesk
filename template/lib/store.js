@@ -20,6 +20,11 @@ class Store {
     this.file = path.join(dataDir, `${slug}.json`);
     this.bookings = [];
     this.outbox = [];
+    // Configs submitted from the FrontDesk kit (config builder page).
+    // These are configs for OTHER businesses (future clients), not this
+    // app's own config — the kit POSTs them here so the owner never has
+    // to download and send a file.
+    this.kitConfigs = [];
     this.load();
   }
 
@@ -29,18 +34,20 @@ class Store {
         const data = JSON.parse(fs.readFileSync(this.file, 'utf8'));
         this.bookings = Array.isArray(data.bookings) ? data.bookings : [];
         this.outbox = Array.isArray(data.outbox) ? data.outbox : [];
+        this.kitConfigs = Array.isArray(data.kitConfigs) ? data.kitConfigs : [];
       }
     } catch (err) {
       // Corrupt snapshot: start empty rather than crash the demo.
       this.bookings = [];
       this.outbox = [];
+      this.kitConfigs = [];
     }
   }
 
   save() {
     fs.mkdirSync(this.dataDir, { recursive: true });
     const tmp = `${this.file}.tmp`;
-    fs.writeFileSync(tmp, JSON.stringify({ bookings: this.bookings, outbox: this.outbox }, null, 2));
+    fs.writeFileSync(tmp, JSON.stringify({ bookings: this.bookings, outbox: this.outbox, kitConfigs: this.kitConfigs }, null, 2));
     fs.renameSync(tmp, this.file);
   }
 
@@ -86,6 +93,23 @@ class Store {
     this.outbox.push(entry);
     this.save();
     return entry;
+  }
+
+  addKitConfig(config) {
+    const entry = {
+      id: newId('kit'),
+      receivedAt: new Date().toISOString(),
+      business: config.business ? config.business.name : null,
+      type: config.business ? config.business.type : null,
+      config,
+    };
+    this.kitConfigs.push(entry);
+    this.save();
+    return entry;
+  }
+
+  listKitConfigs() {
+    return this.kitConfigs.slice().sort((a, b) => b.receivedAt.localeCompare(a.receivedAt));
   }
 }
 

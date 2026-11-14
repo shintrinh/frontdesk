@@ -206,14 +206,20 @@
   </form>
 
   <section id="output-wrap" style="margin-top: 16px;">
-    <h2>Your config file</h2>
-    <p class="hint">This is the whole front desk, in one file. Send it to us and we generate your app &mdash; or keep it and run it yourself.</p>
-    <pre id="output"></pre>
-    <div class="out-actions">
-      <button type="button" id="download">Download config.json</button>
-      <button type="button" id="copy">Copy to clipboard</button>
-    </div>
-    <div class="next"><strong>What happens next:</strong> send the downloaded file to us (or run <code>node template/cli.js validate --config your-config.json</code> to check it). We generate your front desk app from it &mdash; booking page, reminders, and dashboard &mdash; and give you the live link.</div>
+    <h2>Your config is ready</h2>
+    <p class="hint">Tap Send and we will build your front desk app from it &mdash; booking page, reminders, and dashboard. No file to download, no account needed.</p>
+    <button type="button" id="send" class="generate" style="margin-bottom: 12px;">Send my config to FenBig</button>
+    <div id="send-status" class="note" style="display: none; margin-bottom: 12px;"></div>
+    <details id="config-details">
+      <summary style="cursor: pointer; font-weight: 600; font-size: 14px;">See your config file</summary>
+      <pre id="output" style="margin-top: 10px;"></pre>
+      <div class="out-actions">
+        <button type="button" id="download">Download config.json</button>
+        <button type="button" id="copy">Copy to clipboard</button>
+      </div>
+      <p class="note">Only needed if sending does not work &mdash; download the file and send it to us instead.</p>
+    </details>
+    <div class="next" id="next-box" style="margin-top: 12px;"><strong>What happens next:</strong> tap Send above and we generate your front desk app from this config &mdash; booking page, reminders, and dashboard &mdash; and give you the live link.</div>
   </section>
 
   <footer>
@@ -227,7 +233,23 @@
 /* FrontDesk config builder — plain JS, no dependencies.
  * Builds exactly the config the template validates (template/lib/config.js):
  * business, channels, estimate, intakeFields, intakeOptional, language,
- * reminders, services. Service ids are slugified from the service name. */
+ * reminders, services. Service ids are slugified from the service name.
+ *
+ * Sending: the owner taps "Send my config to FenBig" and the page POSTs
+ * the config to KIT_RECEIVER (a FrontDesk server's /api/kit-config
+ * endpoint, which validates and stores it). No file to download, no
+ * account. Download / Copy stay as a fallback if sending fails.
+ * Warm-up: opening this page pings the receiver's /api/health in the
+ * background, so the (free-tier) server is awake by the time the owner
+ * taps Send. */
+
+/* Where finished configs go. One line to change for a self-hosted kit. */
+var KIT_RECEIVER = 'https://frontdesk-fixit-auto.onrender.com';
+try { fetch(KIT_RECEIVER + '/api/health').catch(function () {}); } catch (e) {}
+
+function escapeHtml(s) {
+  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
 
 var INTAKE = {
   'auto-repair': { fields: ['vehicleYearMakeModel', 'mileage', 'symptomDescription'], optional: ['vehicleYearMakeModel', 'mileage', 'symptomDescription'], label: "We'll ask: vehicle year/make/model, mileage, symptom." },
@@ -420,6 +442,32 @@ $('builder').addEventListener('submit', function (ev) {
   $('output').textContent = json;
   $('output-wrap').style.display = 'block';
   $('output-wrap').scrollIntoView({ behavior: 'smooth' });
+  $('send').onclick = async function () {
+    var btn = $('send');
+    var status = $('send-status');
+    btn.disabled = true;
+    btn.textContent = 'Sending…';
+    status.style.display = 'block';
+    status.textContent = 'Sending your config — this can take up to a minute the first time while our server wakes up. Please keep this page open.';
+    try {
+      var res = await fetch(KIT_RECEIVER + '/api/kit-config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: json
+      });
+      var data = {};
+      try { data = await res.json(); } catch (e) {}
+      if (!res.ok) throw new Error(data.message || ('Server returned ' + res.status));
+      btn.style.display = 'none';
+      status.innerHTML = '<strong style="color: var(--green);">Sent! Thank you, ' + escapeHtml(name) + '.</strong> We will build your booking page from this config and send you the live link.';
+      $('next-box').innerHTML = '<strong>What happens next:</strong> we generate your front desk app &mdash; booking page, reminders, and dashboard &mdash; and send you the live link. Nothing else for you to do.';
+    } catch (err) {
+      btn.disabled = false;
+      btn.textContent = 'Send my config to FenBig';
+      status.innerHTML = '<strong style="color: var(--danger);">Could not send automatically.</strong> Please tap Download below and send us the file instead &mdash; or try Send again.';
+      $('config-details').open = true;
+    }
+  };
   $('download').onclick = function () {
     var blob = new Blob([json], { type: 'application/json' });
     var a = document.createElement('a');

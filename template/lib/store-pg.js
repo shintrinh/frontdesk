@@ -20,6 +20,7 @@ const { newId } = require('./store');
 
 const BOOKINGS_TABLE = 'frontdesk_bookings';
 const OUTBOX_TABLE = 'frontdesk_outbox';
+const KIT_CONFIGS_TABLE = 'frontdesk_kit_configs';
 
 class PgStore {
   constructor({ connectionString, slug, Pool }) {
@@ -30,6 +31,7 @@ class PgStore {
     this.slug = slug;
     this.bookings = [];
     this.outbox = [];
+    this.kitConfigs = [];
     this.location = `postgres:${slug}`;
   }
 
@@ -39,6 +41,9 @@ class PgStore {
     );
     await this.pool.query(
       `CREATE TABLE IF NOT EXISTS ${OUTBOX_TABLE} (slug TEXT NOT NULL, id TEXT PRIMARY KEY, data JSONB NOT NULL)`,
+    );
+    await this.pool.query(
+      `CREATE TABLE IF NOT EXISTS ${KIT_CONFIGS_TABLE} (slug TEXT NOT NULL, id TEXT PRIMARY KEY, data JSONB NOT NULL)`,
     );
     const booked = await this.pool.query(
       `SELECT data FROM ${BOOKINGS_TABLE} WHERE slug = $1 ORDER BY data->>'date', data->>'startTime'`,
@@ -50,6 +55,11 @@ class PgStore {
       [this.slug],
     );
     this.outbox = sent.rows.map((r) => r.data);
+    const kits = await this.pool.query(
+      `SELECT data FROM ${KIT_CONFIGS_TABLE} WHERE slug = $1 ORDER BY data->>'receivedAt' DESC`,
+      [this.slug],
+    );
+    this.kitConfigs = kits.rows.map((r) => r.data);
     return this;
   }
 
@@ -107,6 +117,26 @@ class PgStore {
     );
     this.outbox.push(entry);
     return entry;
+  }
+
+  async addKitConfig(config) {
+    const entry = {
+      id: newId('kit'),
+      receivedAt: new Date().toISOString(),
+      business: config.business ? config.business.name : null,
+      type: config.business ? config.business.type : null,
+      config,
+    };
+    await this.pool.query(
+      `INSERT INTO ${KIT_CONFIGS_TABLE} (slug, id, data) VALUES ($1, $2, $3)`,
+      [this.slug, entry.id, JSON.stringify(entry)],
+    );
+    this.kitConfigs.unshift(entry);
+    return entry;
+  }
+
+  listKitConfigs() {
+    return this.kitConfigs.slice().sort((a, b) => b.receivedAt.localeCompare(a.receivedAt));
   }
 
   async close() {

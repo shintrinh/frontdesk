@@ -32,7 +32,7 @@ function nextWeekday() {
 class FakePool {
   constructor() {
     this.queries = [];
-    this.rows = { bookings: [], outbox: [] };
+    this.rows = { bookings: [], outbox: [], kitConfigs: [] };
     this.ended = false;
   }
 
@@ -51,12 +51,22 @@ class FakePool {
         .map((r) => ({ data: r.data }));
       return { rows };
     }
+    if (text.startsWith('SELECT data FROM frontdesk_kit_configs')) {
+      const rows = this.rows.kitConfigs
+        .filter((r) => r.slug === params[0])
+        .map((r) => ({ data: r.data }));
+      return { rows };
+    }
     if (text.startsWith('INSERT INTO frontdesk_bookings')) {
       this.rows.bookings.push({ slug: params[0], id: params[1], data: JSON.parse(params[2]) });
       return { rows: [] };
     }
     if (text.startsWith('INSERT INTO frontdesk_outbox')) {
       this.rows.outbox.push({ slug: params[0], id: params[1], data: JSON.parse(params[2]) });
+      return { rows: [] };
+    }
+    if (text.startsWith('INSERT INTO frontdesk_kit_configs')) {
+      this.rows.kitConfigs.push({ slug: params[0], id: params[1], data: JSON.parse(params[2]) });
       return { rows: [] };
     }
     if (text.startsWith('UPDATE frontdesk_bookings')) {
@@ -143,6 +153,32 @@ test('sendMessage records to the outbox table', async () => {
   assert.equal(sent.simulated, true);
   assert.equal(pool.rows.outbox.length, 1);
   assert.equal(store.outbox.length, 1);
+});
+
+test('addKitConfig writes through to Postgres and survives a restart', async () => {
+  const pool = new FakePool();
+  const store = new PgStore({ connectionString: 'postgres://fake/fake', slug: 'fixit-auto', Pool: FakePool });
+  store.pool = pool;
+  await store.init();
+  const entry = await store.addKitConfig({
+    language: 'en',
+    business: { name: 'Luxe Nails & Spa', type: 'nail-salon', timezone: 'America/New_York', hours: { open: '09:00', close: '19:00', days: [1, 2, 3, 4, 5, 6] } },
+    services: [{ id: 'classic-manicure', name: 'Classic Manicure', durationMin: 45, priceEstimate: { min: 25, max: 40 } }],
+    intakeFields: ['notes'], intakeOptional: ['notes'],
+    estimate: { enabled: false }, reminders: { confirmHoursBefore: 24 }, channels: ['sms'],
+  });
+  assert.match(entry.id, /^kit_/);
+  assert.equal(entry.business, 'Luxe Nails & Spa');
+  assert.equal(entry.type, 'nail-salon');
+  assert.ok(entry.receivedAt);
+  assert.equal(pool.rows.kitConfigs.length, 1);
+  assert.equal(store.listKitConfigs().length, 1);
+  await store.close();
+  const second = new PgStore({ connectionString: 'postgres://fake/fake', slug: 'fixit-auto', Pool: FakePool });
+  second.pool = pool;
+  await second.init();
+  assert.equal(second.listKitConfigs().length, 1);
+  assert.equal(second.listKitConfigs()[0].config.business.name, 'Luxe Nails & Spa');
 });
 
 test('rows survive a restart: a second store on the same pool loads them back', async () => {

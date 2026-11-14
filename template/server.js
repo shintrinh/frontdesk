@@ -14,11 +14,29 @@
 const fs = require('fs');
 const http = require('http');
 const path = require('path');
-const { loadConfig, slug } = require('./lib/config');
+const { loadConfig, validate, slug } = require('./lib/config');
 const { Store } = require('./lib/store');
 const { listSlots, slotIsFree, validateIntake, isOpenDay, nextOpenDay, applyIntakeDefaults } = require('./lib/booking');
 const { loadDataset, estimate, symptomKeywords } = require('./lib/estimate');
 const { confirmationsDue, recallsDue, confirmationMessage, recallMessage } = require('./lib/reminders');
+
+// The kit (config builder) is a static site on another origin, and it
+// POSTs configs here. Only that origin (plus localhost for local testing)
+// may call the kit-config routes. Everything else on this server is
+// same-origin dashboard traffic and needs no CORS.
+const KIT_ORIGINS = ['https://frontdesk-kit.onrender.com'];
+function kitCorsHeaders(req) {
+  const origin = req.headers && req.headers.origin;
+  if (!origin) return {};
+  const allowed = KIT_ORIGINS.includes(origin)
+    || origin.startsWith('http://localhost:') || origin.startsWith('http://127.0.0.1:');
+  if (!allowed) return {};
+  return {
+    'Access-Control-Allow-Origin': origin,
+    'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type',
+  };
+}
 
 const PUBLIC_DIR = path.join(__dirname, 'public');
 const MIME = { '.html': 'text/html', '.css': 'text/css', '.js': 'application/javascript', '.json': 'application/json' };
@@ -74,6 +92,15 @@ function createServer(config, opts = {}) {
     try {
       const url = new URL(req.url, 'http://localhost');
       const parts = url.pathname.split('/').filter(Boolean);
+
+      // CORS preflight for the kit-config routes (the kit is a static
+      // site on another origin). Only the kit origin gets CORS headers.
+      if (req.method === 'OPTIONS' && (url.pathname === '/api/kit-config' || url.pathname === '/api/kit-configs')) {
+        const headers = kitCorsHeaders(req);
+        if (!Object.keys(headers).length) return sendJson(res, 403, { error: 'FORBIDDEN' });
+        res.writeHead(204, headers);
+        return res.end();
+      }
 
       // --- Dashboard (static) ---
       if (req.method === 'GET' && url.pathname === '/') return sendFile(res, path.join(publicDir, 'index.html'));
@@ -185,6 +212,31 @@ function createServer(config, opts = {}) {
       }
       if (req.method === 'GET' && url.pathname === '/api/outbox') {
         return sendJson(res, 200, { outbox: store.outbox, note: 'Simulated sends in the template. A real deployment wires Twilio here.' });
+      }
+      // --- Kit configs: the config builder (static site on another
+      // origin) POSTs a finished config here so the shop owner never has
+      // to download and send a file. The config is validated with the
+      // same rules as a config file, then stored (Postgres when
+      // available, JSON snapshot otherwise) for FenBig to pick up and
+      // generate the app from. GET lists recent submissions, newest first.
+      if (req.method === 'POST' && url.pathname === '/api/kit-config') {
+        const cors = kitCorsHeaders(req);
+        const sendKit = (status, obj) => {
+          const body = JSON.stringify(obj);
+          res.writeHead(status, { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body), ...cors });
+          return res.end(body);
+        };
+        const body = await readBody(req);
+        try {
+          validate(body);
+        } catch (err) {
+          return sendKit(400, { error: 'INVALID_CONFIG', message: err.message });
+        }
+        const entry = await store.addKitConfig(body);
+        return sendKit(201, { ok: true, id: entry.id, business: entry.business, type: entry.type, receivedAt: entry.receivedAt });
+      }
+      if (req.method === 'GET' && url.pathname === '/api/kit-configs') {
+        return sendJson(res, 200, { kitConfigs: store.listKitConfigs() });
       }
       return sendJson(res, 404, { error: 'NOT_FOUND', message: `No route: ${req.method} ${url.pathname}` });
     } catch (err) {
