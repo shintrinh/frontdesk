@@ -189,6 +189,9 @@ button.secondary:hover { background: #e2e8ef; transform: none; box-shadow: none;
 form button[type="submit"] { margin-top: 8px; width: 100%; padding: 14px 24px; font-size: 16px; }
 form button[type="submit"]::after { content: " →"; }
 
+/* The Get estimate button sits under the symptom textbox — keep a clear gap. */
+#estimate-btn { margin-top: 12px; }
+
 /* ---- Tables ---- */
 table { width: 100%; border-collapse: collapse; font-size: 14px; }
 thead th {
