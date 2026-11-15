@@ -1,76 +1,143 @@
-/* FrontDesk — Day 3 redesign (post-pilot).
- * Clean, modern, mobile-first. One stylesheet serves every vertical; the
- * per-vertical dashboards share these class names, so the look stays
- * consistent across FixIt Auto, BrightSmile Dental, and any app the
- * generator scaffolds later. Zero dependencies — plain CSS. */
+/* FrontDesk — visual redesign (v2).
+ * One stylesheet serves every vertical; the per-vertical dashboards share
+ * these class names, so the look stays consistent across FixIt Auto,
+ * BrightSmile Dental, nail, cafe, vet, and any app the generator scaffolds
+ * later. Zero dependencies — plain CSS, system font stacks only.
+ *
+ * Visual system: deep navy header + forest-green brand (the FenBig green,
+ * shared with the kit page), warm neutral background, generous spacing,
+ * strong type hierarchy. Trustworthy and calm — a page a real shop owner
+ * is proud to send customers to. */
 :root {
+  --brand: #14532d;
+  --brand-deep: #0f4023;
+  --brand-bright: #2e9e5b;
+  --brand-soft: #e9f3ec;
+  --brand-line: #bcd8c2;
+  --mint: #7fd6a4;
+  --ink: #0b2239;
+  --ink-soft: #33465c;
   --navy: #0f2a43;
-  --navy-2: #1a4066;
-  --accent: #0b6e4f;
-  --accent-dark: #095c42;
-  --accent-soft: rgba(11, 110, 79, 0.12);
-  --ink: #16212e;
+  --navy-2: #123c5e;
   --muted: #5b6b7c;
-  --line: #e3e8ef;
-  --bg: #f3f5f8;
+  --line: #e6e2d9;
+  --line-strong: #d3d8de;
+  --bg: #f7f5f1;
   --card: #ffffff;
-  --radius: 14px;
-  --shadow: 0 1px 2px rgba(16, 24, 40, 0.06), 0 8px 24px rgba(16, 24, 40, 0.05);
+  --radius: 16px;
+  --shadow: 0 1px 2px rgba(11, 34, 57, 0.05), 0 12px 32px -12px rgba(11, 34, 57, 0.12);
 }
 
 * { box-sizing: border-box; }
 
 body {
-  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   margin: 0;
   background: var(--bg);
   color: var(--ink);
-  line-height: 1.55;
+  line-height: 1.6;
   -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
+/* ---- Header: deep navy, brand eyebrow, green accent rule ---- */
 header {
-  background: linear-gradient(135deg, var(--navy) 0%, var(--navy-2) 100%);
+  background: linear-gradient(155deg, var(--ink) 0%, var(--navy) 55%, var(--navy-2) 100%);
   color: #fff;
-  padding: 30px 28px 26px;
+  padding: 32px 28px 28px;
+  position: relative;
 }
-header h1 { margin: 0; font-size: 28px; font-weight: 750; letter-spacing: -0.02em; }
-header p { margin: 6px 0 0; opacity: 0.85; font-size: 14px; }
+header::before {
+  content: "FRONTDESK · BY FENBIG";
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  color: rgba(255, 255, 255, 0.62);
+  margin-bottom: 12px;
+}
+header::after {
+  content: "";
+  display: block;
+  height: 3px;
+  background: linear-gradient(90deg, var(--brand-bright), rgba(46, 158, 91, 0));
+  margin-top: 22px;
+  border-radius: 2px;
+}
+header h1 {
+  margin: 0;
+  font-size: 32px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.08;
+}
+header p { margin: 8px 0 0; opacity: 0.88; font-size: 14px; }
 header .intro {
-  margin-top: 14px;
+  margin-top: 16px;
   max-width: 720px;
-  padding: 12px 14px;
-  background: rgba(255, 255, 255, 0.12);
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  border-radius: 10px;
+  padding: 13px 16px;
+  background: rgba(255, 255, 255, 0.10);
+  border: 1px solid rgba(255, 255, 255, 0.20);
+  border-left: 3px solid var(--mint);
+  border-radius: 12px;
   opacity: 1;
-  font-size: 14.5px;
+  font-size: 15px;
   line-height: 1.5;
 }
 
-main { max-width: 960px; margin: 0 auto; padding: 24px 20px 40px; display: grid; gap: 18px; }
+/* ---- Layout ---- */
+main { max-width: 960px; margin: 0 auto; padding: 28px 20px 44px; display: grid; gap: 20px; }
 
 .card {
   background: var(--card);
   border: 1px solid var(--line);
   border-radius: var(--radius);
-  padding: 22px 24px;
+  padding: 24px 26px;
   box-shadow: var(--shadow);
 }
-.card h2 { margin: 0 0 4px; font-size: 19px; font-weight: 700; letter-spacing: -0.01em; }
+.card h2 {
+  margin: 0 0 4px;
+  font-size: 20px;
+  font-weight: 750;
+  letter-spacing: -0.01em;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.card h2::before {
+  content: "";
+  width: 9px;
+  height: 9px;
+  border-radius: 3px;
+  background: var(--brand);
+  flex: none;
+}
 .card h2 + p { margin-top: 4px; }
 
-label { display: block; margin: 12px 0; font-weight: 600; font-size: 14px; }
+/* The booking card is the primary action — mark it with a green top edge. */
+.card-booking { position: relative; overflow: hidden; }
+.card-booking::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, var(--brand), var(--brand-bright));
+}
+
+/* ---- Forms ---- */
+label { display: block; margin: 14px 0 0; font-weight: 650; font-size: 13px; color: var(--ink-soft); letter-spacing: 0.01em; }
 label span.muted { display: block; font-weight: 400; margin-top: 2px; }
 
 input, select {
   display: block;
   width: 100%;
-  margin-top: 5px;
-  padding: 11px 12px;
-  border: 1.5px solid #c6cdd6;
-  border-radius: 8px;
-  font-size: 15px;
+  margin-top: 6px;
+  padding: 12px 14px;
+  border: 1.5px solid var(--line-strong);
+  border-radius: 10px;
+  font-size: 15.5px;
   font-family: inherit;
   color: var(--ink);
   background: #fff;
@@ -79,54 +146,72 @@ input, select {
 input::placeholder { color: #98a2b3; }
 input:focus, select:focus {
   outline: none;
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px var(--accent-soft);
+  border-color: var(--brand);
+  box-shadow: 0 0 0 4px rgba(20, 83, 45, 0.13);
 }
 
+/* ---- Buttons ---- */
 button {
-  background: var(--accent);
+  background: var(--brand);
   color: #fff;
   border: 0;
-  border-radius: 8px;
-  padding: 12px 20px;
-  font-size: 15px;
-  font-weight: 650;
+  border-radius: 10px;
+  padding: 13px 22px;
+  font-size: 15.5px;
+  font-weight: 700;
   font-family: inherit;
   cursor: pointer;
-  transition: background 0.15s ease, transform 0.05s ease;
+  box-shadow: 0 6px 16px -6px rgba(20, 83, 45, 0.45);
+  transition: background 0.15s ease, transform 0.1s ease, box-shadow 0.15s ease;
 }
-button:hover { background: var(--accent-dark); }
-button:active { transform: translateY(1px); }
-button:focus-visible { outline: 3px solid var(--accent-soft); outline-offset: 2px; }
+button:hover { background: var(--brand-deep); transform: translateY(-1px); box-shadow: 0 10px 22px -8px rgba(20, 83, 45, 0.5); }
+button:active { transform: translateY(0); box-shadow: 0 4px 12px -6px rgba(20, 83, 45, 0.45); }
+button:focus-visible { outline: 3px solid rgba(20, 83, 45, 0.35); outline-offset: 2px; }
 button.secondary {
-  background: #eef1f4;
+  background: #f0f2f5;
   color: var(--ink);
   border: 1px solid #dbe2ea;
-  padding: 7px 12px;
+  padding: 8px 14px;
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 650;
+  box-shadow: none;
 }
-button.secondary:hover { background: #e2e8ef; }
+button.secondary:hover { background: #e2e8ef; transform: none; box-shadow: none; }
 
-form button[type="submit"] { margin-top: 6px; }
+form button[type="submit"] { margin-top: 8px; width: 100%; padding: 14px 24px; font-size: 16px; }
+form button[type="submit"]::after { content: " →"; }
 
+/* ---- Tables ---- */
 table { width: 100%; border-collapse: collapse; font-size: 14px; }
 thead th {
   text-align: left;
-  padding: 8px 8px;
+  padding: 10px 10px;
   border-bottom: 2px solid var(--line);
-  font-size: 12px;
+  font-size: 11px;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.06em;
   color: var(--muted);
 }
-th, td { text-align: left; padding: 10px 8px; border-bottom: 1px solid #eef1f4; }
+th, td { text-align: left; padding: 12px 10px; border-bottom: 1px solid #f0ede7; }
 tbody tr:last-child td { border-bottom: 0; }
-tbody tr:hover { background: #f8fafc; }
+tbody tr:hover { background: #faf8f4; }
 
+.status {
+  display: inline-block;
+  padding: 3px 11px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+.status-booked { background: var(--brand-soft); color: var(--brand-deep); }
+.status-cancelled { background: #eef1f4; color: var(--muted); }
+
+/* ---- Output / confirmation ---- */
 pre {
   background: #f0f2f5;
-  border-radius: 8px;
+  border-radius: 10px;
   padding: 12px;
   white-space: pre-wrap;
   word-break: break-word;
@@ -134,30 +219,80 @@ pre {
   line-height: 1.5;
 }
 pre:empty { display: none; }
-
-.muted { color: var(--muted); font-size: 13px; }
+#estimate-out, #booking-out { font-family: inherit; }
 
 #estimate-out:not(:empty) {
   background: #eef7f2;
   border: 1px solid #cfe8da;
+  border-radius: 12px;
+  padding: 14px 16px;
 }
 #booking-out:not(:empty) {
   background: #eef7f2;
   border: 1px solid #cfe8da;
+  border-radius: 12px;
+  padding: 14px 16px;
+  font-weight: 600;
+}
+/* Success: dark green banner with a check. Error: soft red banner. */
+#booking-out.success {
+  background: var(--brand);
+  border: 1px solid var(--brand-deep);
+  color: #fff;
+  font-weight: 700;
+  box-shadow: 0 6px 16px -6px rgba(20, 83, 45, 0.45);
+}
+#booking-out.success::before {
+  content: "✓";
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #fff;
+  color: var(--brand);
+  font-weight: 800;
+  font-size: 13px;
+  margin-right: 10px;
+  vertical-align: 1px;
+}
+#booking-out.error {
+  background: #fdf2f2;
+  border: 1px solid #e6b0aa;
+  color: #922b21;
   font-weight: 600;
 }
 
-ul#outbox { margin: 8px 0 0; padding-left: 18px; font-size: 14px; }
-ul#outbox li { margin: 4px 0; }
+.muted { color: var(--muted); font-size: 13px; }
 
-footer { text-align: center; padding: 10px 20px 36px; }
+/* Reminders / recalls: clean rows, action button pinned right. */
+#reminders p, #recalls p {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 0;
+  padding: 12px 0;
+  border-top: 1px solid var(--line);
+}
+#reminders p:first-child, #recalls p:first-child { border-top: 0; }
+
+ul#outbox { margin: 8px 0 0; padding-left: 18px; font-size: 14px; }
+ul#outbox li { margin: 6px 0; }
+
+footer { text-align: center; padding: 24px 20px 40px; border-top: 1px solid var(--line); }
+footer p { margin: 0; }
 
 @media (max-width: 640px) {
-  header { padding: 24px 18px 22px; }
-  header h1 { font-size: 24px; }
+  header { padding: 26px 18px 24px; }
+  header h1 { font-size: 26px; }
+  header .intro { font-size: 14px; }
   main { padding: 16px 12px 32px; gap: 14px; }
-  .card { padding: 18px 16px; }
+  .card { padding: 20px 16px; }
   form button[type="submit"], #estimate-btn, #book-estimate-btn { width: 100%; }
   table { font-size: 13px; }
-  th, td { padding: 8px 5px; }
+  th, td { padding: 10px 6px; }
+  #bookings-table { display: block; overflow-x: auto; white-space: nowrap; }
 }
