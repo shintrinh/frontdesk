@@ -39,7 +39,7 @@ function kitCorsHeaders(req) {
 }
 
 const PUBLIC_DIR = path.join(__dirname, 'public');
-const MIME = { '.html': 'text/html', '.css': 'text/css', '.js': 'application/javascript', '.json': 'application/json' };
+const MIME = { '.html': 'text/html', '.css': 'text/css', '.js': 'application/javascript', '.json': 'application/json', '.svg': 'image/svg+xml' };
 
 function sendJson(res, status, obj) {
   const body = JSON.stringify(obj);
@@ -104,6 +104,7 @@ function createServer(config, opts = {}) {
 
       // --- Dashboard (static) ---
       if (req.method === 'GET' && url.pathname === '/') return sendFile(res, path.join(publicDir, 'index.html'));
+      if (req.method === 'GET' && url.pathname === '/favicon.ico') return sendFile(res, path.join(publicDir, 'favicon.svg'));
       if (req.method === 'GET' && (url.pathname === '/styles.css' || url.pathname === '/dashboard.js' || url.pathname === '/favicon.svg' || url.pathname === '/logo-light.svg')) {
         return sendFile(res, path.join(publicDir, url.pathname.slice(1)));
       }
