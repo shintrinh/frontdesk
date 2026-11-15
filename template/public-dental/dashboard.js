@@ -138,11 +138,17 @@ async function submitBooking(event) {
   };
   try {
     const data = await api('/api/bookings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-    $('booking-out').textContent = `Booked: ${data.booking.id} — ${body.date} ${body.startTime}`;
+    const out = $('booking-out');
+    out.textContent = `Booked: ${data.booking.id} — ${body.date} ${body.startTime}`;
+    out.classList.remove('error');
+    out.classList.add('success');
     await refresh();
     await loadSlots();
   } catch (err) {
-    $('booking-out').textContent = `Could not book: ${err.message}`;
+    const out = $('booking-out');
+    out.textContent = `Could not book: ${err.message}`;
+    out.classList.remove('success');
+    out.classList.add('error');
   }
 }
 
@@ -153,7 +159,7 @@ async function refresh() {
   tbody.innerHTML = bookings.map((b) => {
     const service = services.find((s) => s.id === b.serviceId);
     const cancel = b.status === 'booked' ? `<button class="secondary" data-cancel="${b.id}">Cancel</button>` : '';
-    return `<tr><td>${b.startTime}</td><td>${b.customerName}</td><td>${service ? service.name : b.serviceId}</td><td>${b.phone}</td><td>${b.status}</td><td>${cancel}</td></tr>`;
+    return `<tr><td>${b.startTime}</td><td>${b.customerName}</td><td>${service ? service.name : b.serviceId}</td><td>${b.phone}</td><td><span class="status status-${b.status}">${b.status}</span></td><td>${cancel}</td></tr>`;
   }).join('') || '<tr><td colspan="6">No appointments today yet.</td></tr>';
   tbody.querySelectorAll('[data-cancel]').forEach((btn) => btn.addEventListener('click', async () => {
     await api(`/api/bookings/${btn.dataset.cancel}/cancel`, { method: 'POST' });
