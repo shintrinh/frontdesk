@@ -35,6 +35,10 @@ async function init() {
   services = svc.services;
   $('business-name').textContent = config.business.name;
   $('business-meta').textContent = `${config.business.type} · ${config.business.address} · ${config.business.phone} · ${config.business.hours.open}–${config.business.hours.close}`;
+  // One professional header colour per shop type (header[data-theme]).
+  const THEME_BY_TYPE = { 'auto-repair': 'auto', 'dental-clinic': 'dental', 'cafe': 'cafe', 'nail-salon': 'nail', 'vet-clinic': 'vet', 'salon': 'salon' };
+  const _theme = THEME_BY_TYPE[config.business.type];
+  if (_theme) document.querySelector('header').dataset.theme = _theme;
   $('service').innerHTML = services.map((s) => {
     const codes = (s.codes || []).join(', ');
     return `<option value="${s.id}">${s.name} (${s.durationMin} min${codes ? ` — ${codes}` : ''})</option>`;
