@@ -104,7 +104,7 @@ function createServer(config, opts = {}) {
 
       // --- Dashboard (static) ---
       if (req.method === 'GET' && url.pathname === '/') return sendFile(res, path.join(publicDir, 'index.html'));
-      if (req.method === 'GET' && (url.pathname === '/styles.css' || url.pathname === '/dashboard.js')) {
+      if (req.method === 'GET' && (url.pathname === '/styles.css' || url.pathname === '/dashboard.js' || url.pathname === '/favicon.svg' || url.pathname === '/logo-light.svg')) {
         return sendFile(res, path.join(publicDir, url.pathname.slice(1)));
       }
 

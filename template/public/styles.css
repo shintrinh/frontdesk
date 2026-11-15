@@ -40,28 +40,36 @@ body {
   text-rendering: optimizeLegibility;
 }
 
-/* ---- Header: deep navy, brand eyebrow, green accent rule ---- */
+/* ---- Header: brand logo, centred content, green accent rule ---- */
+/* Header content is centred, like the main content column below it. */
+/* One professional header colour per shop type (header[data-theme], set */
+/* by dashboard.js from config.business.type). Default = deep navy. */
 header {
   background: linear-gradient(155deg, var(--ink) 0%, var(--navy) 55%, var(--navy-2) 100%);
   color: #fff;
   padding: 32px 28px 28px;
   position: relative;
+  text-align: center;
 }
-header::before {
-  content: "FRONTDESK · BY FENBIG";
+header[data-theme="auto"] { background: linear-gradient(155deg, #7c2d12 0%, #9a3412 55%, #c2410c 100%); }
+header[data-theme="dental"] { background: linear-gradient(155deg, #134e4a 0%, #115e59 55%, #0f766e 100%); }
+header[data-theme="cafe"] { background: linear-gradient(155deg, #292524 0%, #44403c 55%, #57534e 100%); }
+header[data-theme="nail"] { background: linear-gradient(155deg, #4c0519 0%, #881337 55%, #9f1239 100%); }
+header[data-theme="vet"] { background: linear-gradient(155deg, #14532d 0%, #166534 55%, #15803d 100%); }
+header[data-theme="salon"] { background: linear-gradient(155deg, #3b0764 0%, #6b21a8 55%, #7e22ce 100%); }
+header .brand-logo {
   display: block;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.18em;
-  color: rgba(255, 255, 255, 0.62);
-  margin-bottom: 12px;
+  height: 32px;
+  width: auto;
+  margin: 0 auto 14px;
 }
 header::after {
   content: "";
   display: block;
   height: 3px;
-  background: linear-gradient(90deg, var(--brand-bright), rgba(46, 158, 91, 0));
-  margin-top: 22px;
+  max-width: 160px;
+  background: linear-gradient(90deg, transparent, var(--brand-bright), transparent);
+  margin: 22px auto 0;
   border-radius: 2px;
 }
 header h1 {
@@ -73,7 +81,7 @@ header h1 {
 }
 header p { margin: 8px 0 0; opacity: 0.88; font-size: 14px; }
 header .intro {
-  margin-top: 16px;
+  margin: 16px auto 0;
   max-width: 720px;
   padding: 13px 16px;
   background: rgba(255, 255, 255, 0.10);

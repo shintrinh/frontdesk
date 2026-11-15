@@ -112,7 +112,7 @@ function copyDashboard(config, outDir) {
   const srcDir = path.join(__dirname, dashboardDirFor(config.business.type));
   const destDir = path.join(outDir, 'public');
   fs.mkdirSync(destDir, { recursive: true });
-  for (const file of ['index.html', 'dashboard.js', 'styles.css']) {
+  for (const file of ['index.html', 'dashboard.js', 'styles.css', 'favicon.svg', 'logo-light.svg']) {
     fs.copyFileSync(path.join(srcDir, file), path.join(destDir, file));
   }
   return dashboardDirFor(config.business.type);
