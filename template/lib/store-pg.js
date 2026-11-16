@@ -17,6 +17,7 @@
  *   frontdesk_outbox   (slug TEXT, id TEXT PRIMARY KEY, data JSONB)
  */
 const { newId } = require('./store');
+const { twilioConfigured, sendSms } = require('./twilio');
 
 const BOOKINGS_TABLE = 'frontdesk_bookings';
 const OUTBOX_TABLE = 'frontdesk_outbox';
@@ -111,6 +112,15 @@ class PgStore {
 
   async sendMessage(message) {
     const entry = { id: newId('msg'), sentAt: new Date().toISOString(), simulated: true, ...message };
+    if (twilioConfigured()) {
+      // Real SMS via Twilio. A Twilio failure never blocks the booking:
+      // the message is still recorded, marked not-simulated, with the
+      // Twilio error attached so the shop owner can see what happened.
+      const result = await sendSms({ to: message.to, body: message.body });
+      entry.simulated = false;
+      if (result.ok) entry.twilioSid = result.sid;
+      else entry.twilioError = result.error;
+    }
     await this.pool.query(
       `INSERT INTO ${OUTBOX_TABLE} (slug, id, data) VALUES ($1, $2, $3)`,
       [this.slug, entry.id, JSON.stringify(entry)],

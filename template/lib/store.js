@@ -9,6 +9,7 @@
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const { twilioConfigured, sendSms } = require('./twilio');
 
 function newId(prefix) {
   return `${prefix}_${crypto.randomBytes(4).toString('hex')}`;
@@ -88,8 +89,17 @@ class Store {
     return booking;
   }
 
-  sendMessage(message) {
+  async sendMessage(message) {
     const entry = { id: newId('msg'), sentAt: new Date().toISOString(), simulated: true, ...message };
+    if (twilioConfigured()) {
+      // Real SMS via Twilio. A Twilio failure never blocks the booking:
+      // the message is still recorded, marked not-simulated, with the
+      // Twilio error attached so the shop owner can see what happened.
+      const result = await sendSms({ to: message.to, body: message.body });
+      entry.simulated = false;
+      if (result.ok) entry.twilioSid = result.sid;
+      else entry.twilioError = result.error;
+    }
     this.outbox.push(entry);
     this.save();
     return entry;

@@ -212,7 +212,7 @@ function createServer(config, opts = {}) {
         return sendJson(res, 200, { sent });
       }
       if (req.method === 'GET' && url.pathname === '/api/outbox') {
-        return sendJson(res, 200, { outbox: store.outbox, note: 'Simulated sends in the template. A real deployment wires Twilio here.' });
+        return sendJson(res, 200, { outbox: store.outbox, note: 'Sends via Twilio when TWILIO_SID, TWILIO_TOKEN and TWILIO_NUMBER are set; otherwise the send is simulated and recorded here.' });
       }
       // --- Kit configs: the config builder (static site on another
       // origin) POSTs a finished config here so the shop owner never has
