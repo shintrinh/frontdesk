@@ -15,6 +15,12 @@ const FIELD_LABELS = {
   healthHistory: 'Health history / medications',
   isNewPatient: 'New patient?',
   lastVisitDate: 'Last visit date (optional)',
+  petName: 'Pet name',
+  species: 'Species',
+  breed: 'Breed',
+  petAgeYears: 'Pet age (years)',
+  ownerName: 'Owner name',
+  reasonForVisit: 'Reason for visit',
 };
 
 async function api(path, opts) {
