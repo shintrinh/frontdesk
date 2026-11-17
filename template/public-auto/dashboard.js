@@ -225,8 +225,8 @@ async function refresh() {
 
   const rem = await api('/api/reminders');
   $('reminders').innerHTML = [
-    ...rem.confirmations.map((b) => `<p>Confirm: ${b.customerName} — ${b.date} ${b.startTime} (${b.phone}) <button class="secondary" data-send="${b.id}">Send reminder</button></p>`),
-    ...rem.recalls.map((r) => `<p>Recall due: ${r.customerName} — last visit ${r.lastVisitDate} (${r.daysSince} days ago) <button class="secondary" data-recall="${r.phone}">Send recall</button></p>`),
+    ...rem.confirmations.map((b) => `<p><span>Confirm: ${b.customerName} — ${b.date} ${b.startTime} (${b.phone})</span> <button class="secondary" data-send="${b.id}">Send reminder</button></p>`),
+    ...rem.recalls.map((r) => `<p><span>Recall due: ${r.customerName} — last visit ${r.lastVisitDate} (${r.daysSince} days ago)</span> <button class="secondary" data-recall="${r.phone}">Send recall</button></p>`),
   ].join('') || '<p class="muted">Nothing due right now.</p>';
   document.querySelectorAll('[data-send]').forEach((btn) => btn.addEventListener('click', async () => {
     await api('/api/reminders/send', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ bookingId: btn.dataset.send }) });

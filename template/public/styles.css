@@ -289,6 +289,9 @@ pre:empty { display: none; }
   border-top: 1px solid var(--line);
 }
 #reminders p:first-child, #recalls p:first-child { border-top: 0; }
+/* The text is a real flex item so it can shrink and wrap on narrow phones
+   instead of overflowing the card (the phone number was cut off at 390px). */
+#reminders p span, #recalls p span { flex: 1 1 200px; min-width: 0; overflow-wrap: break-word; }
 
 ul#outbox { margin: 8px 0 0; padding-left: 18px; font-size: 14px; }
 ul#outbox li { margin: 6px 0; }
@@ -300,10 +303,14 @@ footer p { margin: 0; }
   header { padding: 26px 18px 24px; }
   header h1 { font-size: 26px; }
   header .intro { font-size: 14px; }
-  main { padding: 16px 12px 32px; gap: 14px; }
-  .card { padding: 20px 16px; }
+  main { padding: 16px 12px 32px; gap: 14px; grid-template-columns: minmax(0, 1fr); }
+  .card { padding: 20px 16px; min-width: 0; }
   form button[type="submit"], #estimate-btn, #book-estimate-btn { width: 100%; }
   table { font-size: 13px; }
   th, td { padding: 10px 6px; }
   #bookings-table { display: block; overflow-x: auto; white-space: nowrap; }
+  /* Long service names wrap instead of forcing a wide scroll: the row
+     grows to fit both lines, so nothing is ever cut mid-word. The
+     min-width keeps whole words ("Replacement") on one line. */
+  #bookings-table td:nth-child(3) { white-space: normal; overflow-wrap: break-word; min-width: 110px; }
 }

@@ -50,7 +50,17 @@ async function init() {
   const THEME_BY_TYPE = { 'auto-repair': 'auto', 'dental-clinic': 'dental', 'cafe': 'cafe', 'nail-salon': 'nail', 'vet-clinic': 'vet', 'salon': 'salon' };
   const _theme = THEME_BY_TYPE[config.business.type];
   if (_theme) document.querySelector('header').dataset.theme = _theme;
-  $('service').innerHTML = services.map((s) => `<option value="${s.id}">${s.name} (${s.durationMin} min)</option>`).join('');
+  $('service').innerHTML = services.map((s) => {
+    // Show the price like the auto dashboard does; a fixed price shows once
+    // ("$18"), a range shows both ends ("$160–$188"). No priceEstimate = no price.
+    let price = '';
+    if (s.priceEstimate && s.priceEstimate.min > 0) {
+      price = s.priceEstimate.min === s.priceEstimate.max
+        ? ` — $${s.priceEstimate.min}`
+        : ` — $${s.priceEstimate.min}–$${s.priceEstimate.max}`;
+    }
+    return `<option value="${s.id}">${s.name} (${s.durationMin} min${price})</option>`;
+  }).join('');
   $('date').value = todayISO();
   $('date').min = todayISO();
   renderIntake();
@@ -195,8 +205,8 @@ async function refresh() {
 
   const rem = await api('/api/reminders');
   $('reminders').innerHTML = [
-    ...rem.confirmations.map((b) => `<p>Confirm: ${b.customerName} — ${b.date} ${b.startTime} (${b.phone}) <button class="secondary" data-send="${b.id}">Send reminder</button></p>`),
-    ...rem.recalls.map((r) => `<p>Recall due: ${r.customerName} — last visit ${r.lastVisitDate} (${r.daysSince} days ago) <button class="secondary" data-recall="${r.phone}">Send recall</button></p>`),
+    ...rem.confirmations.map((b) => `<p><span>Confirm: ${b.customerName} — ${b.date} ${b.startTime} (${b.phone})</span> <button class="secondary" data-send="${b.id}">Send reminder</button></p>`),
+    ...rem.recalls.map((r) => `<p><span>Recall due: ${r.customerName} — last visit ${r.lastVisitDate} (${r.daysSince} days ago)</span> <button class="secondary" data-recall="${r.phone}">Send recall</button></p>`),
   ].join('') || '<p class="muted">Nothing due right now.</p>';
   document.querySelectorAll('[data-send]').forEach((btn) => btn.addEventListener('click', async () => {
     await api('/api/reminders/send', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ bookingId: btn.dataset.send }) });
